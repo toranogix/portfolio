@@ -6,4 +6,5 @@ export const texturesPaths = {
     books: "/textures/bake_books.webp",
     chesstable: "/textures/bake_chesstable.webp",
     desktop: "/textures/bake_desktop.webp",
+    base: "/textures/bake_floor.webp",
 }

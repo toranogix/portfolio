@@ -77,7 +77,7 @@ loader.load("/model/room_portfolio.glb", (glb) => {
                 });
             }
         });
-        // console.log(glb.scene);
+        console.log(glb.scene);
         glb.scene.scale.setScalar(0.08)
         scene.add(glb.scene);
     });
