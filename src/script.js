@@ -42,8 +42,13 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 const controls = new OrbitControls(camera, canvas)
 controls.enableDamping = true
 controls.enablePan = false;
-controls.maxPolarAngle = Math.PI *0.5;
+controls.minDistance = 1.5;
+controls.maxDistance = 5;
+controls.minPolarAngle = Math.PI * 0.2;
+controls.maxPolarAngle = Math.PI * 0.49;
 controls.target.set(0, 1, 0)
+
+let minCameraY = null;
 
 /* textures map */
 const texturesMap = {};
@@ -80,14 +85,37 @@ loader.load("/model/room_portfolio.glb", (glb) => {
         console.log(glb.scene);
         glb.scene.scale.setScalar(0.08)
         scene.add(glb.scene);
-    });
 
+        // calculate the limit of the camera using the bounding box of the scene
+        // without the background   
+        const bbox = new THREE.Box3().makeEmpty();
+        glb.scene.updateWorldMatrix(true, true);
+        glb.scene.traverse((obj) => {
+            if (!obj.isMesh) return;
+            const name = (obj.name || "").toLowerCase();
+            if (name.includes("background")) return;
+            const objBox = new THREE.Box3().setFromObject(obj);
+            bbox.union(objBox);
+        });
+        if (!bbox.isEmpty()) {
+            const floorY = bbox.min.y;
+            const margin = 0.05;
+            minCameraY = floorY + margin;
+            controls.target.y = Math.max(controls.target.y, minCameraY);
+        }
+    });
 
 
 /* animate*/
 function animate() {
     window.requestAnimationFrame(animate)
     controls.update()
+
+    // clamp the camera position to the minimum camera y
+    if (minCameraY !== null && camera.position.y < minCameraY) {
+        camera.position.y = minCameraY;
+        controls.target.y = Math.max(controls.target.y, minCameraY);
+    }
     renderer.render(scene, camera)
 }
 animate()
