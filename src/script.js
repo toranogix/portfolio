@@ -53,7 +53,6 @@ window.addEventListener('keydown', (event) => {
 }) 
 
 
-
 /* scene*/
 const canvas = document.querySelector('canvas.webgl')
 const scene = new THREE.Scene()
@@ -96,7 +95,6 @@ Object.entries(texturesPaths).forEach(([key, path]) => {
     textureLoader.load(path, (texture) => {
         texture.flipY = false;
         texture.colorSpace = THREE.SRGBColorSpace;
-        texture.encoding = THREE.sRGBEncoding;
         texturesMap[key] = texture;
     });
 });
@@ -150,7 +148,6 @@ loader.load("/model/room_portfolio.glb", (glb) => {
 function animate() {
     window.requestAnimationFrame(animate)
     controls.update()
-
 
     // clamp the camera position to the minimum camera y
     if (minCameraY !== null && camera.position.y < minCameraY) {
