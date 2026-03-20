@@ -16,6 +16,9 @@ let soundTrack = null
 
 // debug panel
 const gui = new GUI();
+gui.title("Debug UI")
+gui.show(gui._hidden);
+
 const soundFolder = gui.addFolder("Sound")
 const soundObj = {
     playSound: () => {
