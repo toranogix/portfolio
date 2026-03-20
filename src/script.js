@@ -3,7 +3,51 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
 import {params} from '../utils/utils.js'
-import {texturesPaths} from '../public/constants/constants.js'
+import {texturesPaths, cameraPosition, cameraTarget} from '../public/constants/constants.js'
+import GUI from 'lil-gui'; 
+
+
+
+// variables
+let minCameraY = null;
+let soundListener = null
+let soundTrack = null
+
+
+// debug panel
+const gui = new GUI();
+const soundFolder = gui.addFolder("Sound")
+const soundObj = {
+    playSound: () => {
+        if (soundTrack?.isPlaying) {
+            soundTrack.stop()
+            return
+        }
+        if (!soundListener) {
+            soundListener = new THREE.AudioListener()
+            camera.add(soundListener)
+            soundTrack = new THREE.Audio(soundListener)
+            new THREE.AudioLoader().load("/audio/lis.mp3", (buffer) => {
+                soundTrack.setBuffer(buffer)
+                soundTrack.setLoop(true)
+                soundTrack.setVolume(0.2)
+                scene.add(soundTrack)
+                soundListener.context.resume().then(() => soundTrack.play())
+            })
+            return
+        }
+        if (soundTrack.buffer) {
+            soundListener.context.resume().then(() => soundTrack.play())
+        }
+    }
+}
+
+// show/hide debug panel
+window.addEventListener('keydown', (event) => {
+    if(event.key === 'h'){
+        gui.show(gui._hidden);
+    }
+}) 
 
 
 
@@ -12,26 +56,14 @@ const canvas = document.querySelector('canvas.webgl')
 const scene = new THREE.Scene()
 
 /* camera*/
-const camera = new THREE.PerspectiveCamera(75, params.aspect, 0.1, 100)
-camera.position.set(2, 5, -5)
+const camera = new THREE.PerspectiveCamera(35, params.aspect, 0.1, 100)
+camera.position.set(cameraPosition.x, cameraPosition.y, cameraPosition.z)
 scene.add(camera)
 
 /* lights*/
-// const pointLight = new THREE.PointLight(0xffffff, 6);
-// pointLight.position.set(0, 3, 0.5);
-// pointLight.castShadow = true;
-// scene.add(pointLight);
-
-// const spotLight = new THREE.SpotLight("#E0570D", );
-// spotLight.position.set(0, 8, 1);
-// spotLight.castShadow = true;
-// scene.add(spotLight);
 const ambientLight = new THREE.AmbientLight(0xffffff, 6);
 scene.add(ambientLight);
-const directionalLight = new THREE.DirectionalLight(0xffffff, 6);
-directionalLight.position.set(0, 10, 0);
-directionalLight.castShadow = true;
-scene.add(directionalLight);
+
 
 /* renderer*/
 const renderer = new THREE.WebGLRenderer({canvas: canvas, antialias: true})
@@ -41,14 +73,12 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 /* controls */
 const controls = new OrbitControls(camera, canvas)
 controls.enableDamping = true
-controls.enablePan = false;
-controls.minDistance = 1.5;
+// controls.enablePan = false;
+controls.minDistance = 3;
 controls.maxDistance = 5;
 controls.minPolarAngle = Math.PI * 0.2;
 controls.maxPolarAngle = Math.PI * 0.49;
-controls.target.set(0, 1, 0)
-
-let minCameraY = null;
+controls.target.set(cameraTarget.x, cameraTarget.y, cameraTarget.z)
 
 /* textures map */
 const texturesMap = {};
@@ -80,9 +110,15 @@ loader.load("/model/room_portfolio.glb", (glb) => {
                     child.material.needsUpdate = true;
                 }
                 });
+                
+                // give a material to threejs_logo
+                if(child.name.includes("threejs_logo")){
+                    const threejsMaterial = new THREE.MeshBasicMaterial({color: "#ffffff"});
+                    child.material = threejsMaterial;
+                    child.material.needsUpdate = true;
+                }
             }
         });
-        console.log(glb.scene);
         glb.scene.scale.setScalar(0.08)
         scene.add(glb.scene);
 
@@ -106,10 +142,12 @@ loader.load("/model/room_portfolio.glb", (glb) => {
     });
 
 
+
 /* animate*/
 function animate() {
     window.requestAnimationFrame(animate)
     controls.update()
+
 
     // clamp the camera position to the minimum camera y
     if (minCameraY !== null && camera.position.y < minCameraY) {
@@ -119,3 +157,9 @@ function animate() {
     renderer.render(scene, camera)
 }
 animate()
+
+
+
+/*************************** TWEAKS ***************************/
+soundFolder.add(soundObj, "playSound").name("Play/stop sound")
+

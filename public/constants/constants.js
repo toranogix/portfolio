@@ -1,5 +1,17 @@
 
 
+export const cameraPosition = {
+    x: 2.365196560533881,
+    y: 3.145626110602074,
+    z: -3.6662315161195904,
+}
+
+export const cameraTarget = {
+    x:-0.389941195896174,
+    y: 1.8772718124625551,
+    z:-0.2097330786842654
+}
+
 export const texturesPaths = {
     base: "/textures/bg.webp",
     bed: "/textures/bed.webp",
@@ -7,8 +19,8 @@ export const texturesPaths = {
     chess: "/textures/chessboard.webp",
     chess_table: "/textures/chesstable.webp",
     desktop: "/textures/desktop.webp",
-    earth_globe: "/textures/globe.webp",
     drawer: "/textures/drawer_vin_bask.webp",
+    earth_globe: "/textures/globe.webp",
     floor: "/textures/floor.webp",
     gaming_chair: "/textures/gaming_chair.webp",
     hanging_lights: "/textures/lights.webp",
@@ -18,7 +30,7 @@ export const texturesPaths = {
     plants: "/textures/plants.webp",
     ps5: "/textures/ps5.webp",
     wall: "/textures/wall.webp",
-    github_logo: "/textures/github.webp",
+    github_logo: "textures/github.webp",
     jin_sakai_mask: "/textures/jin_sakai.webp",
     linkedin_logo: "/textures/linkedin.webp",
     malenia: "/textures/malenia.webp",
