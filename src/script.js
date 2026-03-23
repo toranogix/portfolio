@@ -75,7 +75,7 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 /* controls */
 const controls = new OrbitControls(camera, canvas)
 controls.enableDamping = true
-// controls.enablePan = false;
+controls.enablePan = false;
 controls.minDistance = 3;
 controls.maxDistance = 10;
 controls.minPolarAngle = Math.PI * 0.2;
