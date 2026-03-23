@@ -14,6 +14,7 @@ npm run dev
 ```
 
 ## Credits
+The models used :
 - `Antique globe`: 
 This work is based on "Antique Globe" (https://sketchfab.com/3d-models/antique-globe-78b47132c6be42bcb664545a69b380d9) by mtcollings (https://sketchfab.com/mtcollings) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
 - `Chess set`:
@@ -33,5 +34,5 @@ This work is based on "Naruto Headbands" (https://sketchfab.com/3d-models/naruto
 
 
 This work is inspired by :
--  [Bruno Simon's room] by Bruno Simon (https://my-room-in-3d.vercel.app/)
--  [Soo Ah's room] by Andrew Woan (https://www.sooahs-room-folio.com/)
+-  [Bruno Simon's room](https://my-room-in-3d.vercel.app/) by Bruno Simon
+-  [Soo Ah's room](https://www.sooahs-room-folio.com/) by Andrew Woan 
