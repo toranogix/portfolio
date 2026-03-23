@@ -17,7 +17,7 @@ export const texturesPaths = {
     bed: "/textures/bed.webp",
     books: "/textures/books.webp",
     chess: "/textures/chessboard.webp",
-    chess_table: "/textures/chesstable.webp",
+    chess_table: "/textures/chtable.webp",
     desktop: "/textures/desktop.webp",
     drawer: "/textures/drawer_vin_bask.webp",
     earth_globe: "/textures/globe.webp",
