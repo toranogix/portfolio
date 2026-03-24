@@ -53,6 +53,22 @@ window.addEventListener('keydown', (event) => {
 }) 
 
 
+// load video and display to screen
+const video = document.createElement('video')
+video.src = "/video/game.mp4"
+video.loop = true
+video.muted = true
+video.playsInline = true
+video.autoplay = true
+video.play()
+const videoTexture = new THREE.VideoTexture(video)
+// videoTexture.flipY = true
+videoTexture.colorSpace = THREE.SRGBColorSpace;
+videoTexture.repeat.set(1, 1.5)
+videoTexture.offset.set(0, 0)
+
+
+
 /* scene*/
 const canvas = document.querySelector('canvas.webgl')
 const scene = new THREE.Scene()
@@ -72,10 +88,18 @@ const renderer = new THREE.WebGLRenderer({canvas: canvas, antialias: true})
 renderer.setSize(params.width, params.height)
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
+/* resize */
+window.addEventListener('resize', () => {
+    renderer.setSize(window.innerWidth, window.innerHeight)
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    camera.aspect = window.innerWidth / window.innerHeight
+    camera.updateProjectionMatrix()
+})
+
 /* controls */
 const controls = new OrbitControls(camera, canvas)
 controls.enableDamping = true
-controls.enablePan = false;
+// controls.enablePan = false;
 controls.minDistance = 3;
 controls.maxDistance = 10;
 controls.minPolarAngle = Math.PI * 0.2;
@@ -101,7 +125,7 @@ Object.entries(texturesPaths).forEach(([key, path]) => {
 
 const loader = new GLTFLoader();
 loader.setDRACOLoader(dracoLoader);
-loader.load("/model/room_portfolio.glb", (glb) => {
+loader.load("/model/room_portfolio_v4-v1.glb", (glb) => {
     glb.scene.traverse((child) => {
         if(child.isMesh){
             Object.keys(texturesMap).forEach((key) => {
@@ -117,6 +141,13 @@ loader.load("/model/room_portfolio.glb", (glb) => {
                     const threejsMaterial = new THREE.MeshBasicMaterial({color: "#ffffff"});
                     child.material = threejsMaterial;
                     child.material.needsUpdate = true;
+                }
+
+                // video material
+                if (child.name.includes("screen")){
+                    const videoMaterial = new THREE.MeshBasicMaterial({map: videoTexture})
+                    child.material = videoMaterial;
+                    // child.material.needsUpdate = true;
                 }
             }
         });
