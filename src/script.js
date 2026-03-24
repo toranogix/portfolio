@@ -125,7 +125,7 @@ Object.entries(texturesPaths).forEach(([key, path]) => {
 
 const loader = new GLTFLoader();
 loader.setDRACOLoader(dracoLoader);
-loader.load("/model/room_portfolio_v4-v1.glb", (glb) => {
+loader.load("/model/room_portfolio.glb", (glb) => {
     glb.scene.traverse((child) => {
         if(child.isMesh){
             Object.keys(texturesMap).forEach((key) => {
