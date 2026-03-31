@@ -12,6 +12,13 @@ import GUI from 'lil-gui';
 let minCameraY = null;
 let soundListener = null
 let soundTrack = null
+let currentIntersects = null
+
+// params
+const size = {
+    height: window.innerHeight,
+    width: window.innerWidth
+}
 
 
 // debug panel
@@ -95,6 +102,16 @@ window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight
     camera.updateProjectionMatrix()
 })
+
+/* raycaster + get mouse mouvement */
+const mouse = new THREE.Vector2()
+windows.addEventListener('mousemove', (event) => {
+    mouse.x = event.clientX / size.width * 2 - 1,
+    mouse.y = - (event.cientY / size.height) * 2 + 1
+})
+const raycaster = new THREE.RayCaster()
+
+
 
 /* controls */
 const controls = new OrbitControls(camera, canvas)
@@ -185,6 +202,10 @@ function animate() {
         camera.position.y = minCameraY;
         controls.target.y = Math.max(controls.target.y, minCameraY);
     }
+    
+    // raycaster elements
+    raycaster.setFromCamera(mouse, camera)
+    
     renderer.render(scene, camera)
 }
 animate()
