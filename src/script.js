@@ -5,7 +5,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
 import {texturesPaths, cameraPosition, cameraTarget, socialLinks, params} from '../public/constants/constants.js'
 import gui from '../public/debug/debug.js'
-// import {hoverEffect} from '../public/helper/helper.js'
+import {hoverEffect} from '../public/helper/helper.js'
 
 
 // debug panel
@@ -31,11 +31,9 @@ video.playsInline = true
 video.autoplay = true
 video.play()
 const videoTexture = new THREE.VideoTexture(video)
-// videoTexture.flipY = true
+videoTexture.flipY = true
 videoTexture.colorSpace = THREE.SRGBColorSpace;
-videoTexture.repeat.set(1, 1.5)
-videoTexture.offset.set(0, 0)
-
+videoTexture.offset.set(0.25, -0.135);
 
 /* scene*/
 const canvas = document.querySelector('canvas.webgl')
@@ -128,11 +126,11 @@ loader.load("/model/room_portfolio.glb", (glb) => {
                 // list objects to intersect
                 if(child.name.includes("target")){
                     objectsToIntersect.push(child)
+                }
+                if(child.name.includes("hover")){
 
-                    // for hover effect
+                    // for hover effect 
                     child.userData.initialScale = new THREE.Vector3().copy(child.scale)
-                    child.userData.initialPosition = new THREE.Vector3().copy(child.position)
-                    child.userData.initialRotation = new THREE.Vector3().copy(child.rotation)
                     child.userData.isAnimating = false
                 }
 
@@ -144,15 +142,20 @@ loader.load("/model/room_portfolio.glb", (glb) => {
                 }
 
                 // video material
-                if (child.name.includes("screen")){
+                if (child.name.includes("desktop_screen")){
                     const videoMaterial = new THREE.MeshBasicMaterial({map: videoTexture})
                     child.material = videoMaterial;
-                    // child.material.needsUpdate = true;
+                }
+                if (child.name.includes("mac_screen")){
+                    const videoMaterial = new THREE.MeshBasicMaterial({
+                        color: "#ff0000",
+                        // map: videoTexture
+                    })
+                    child.material = videoMaterial;
                 }
             }
         });
         glb.scene.scale.setScalar(0.08)
-        console.log(glb.scene)
         scene.add(glb.scene);
 
         // calculate the limit of the camera using the bounding box of the scene
