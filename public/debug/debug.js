@@ -3,7 +3,15 @@ import * as THREE from 'three';
 import GUI from 'lil-gui'
 
 
-export default function gui(){
+/**
+ * GUI panel
+ * @param {THREE.Camera} camera 
+ * @param {THREE.Scene} scene 
+ * @returns {void}
+ */
+export default function gui(camera, scene){
+    let soundListener = null
+    let soundTrack = null
     const gui = new GUI();
     gui.title("Debug UI")
     

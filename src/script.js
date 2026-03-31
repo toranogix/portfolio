@@ -8,8 +8,6 @@ import gui from '../public/debug/debug.js'
 import {hoverEffect} from '../public/helper/helper.js'
 
 
-// debug panel
-gui()
 
 // variables
 let minCameraY = null;
@@ -43,6 +41,7 @@ const scene = new THREE.Scene()
 const camera = new THREE.PerspectiveCamera(35, params.aspect, 0.1, 100)
 camera.position.set(cameraPosition.x, cameraPosition.y, cameraPosition.z)
 scene.add(camera)
+gui(camera, scene)
 
 /* lights*/
 const ambientLight = new THREE.AmbientLight(0xffffff, 6);
