@@ -1,5 +1,11 @@
 
 
+export const params = {
+    height: window.innerHeight,
+    width: window.innerWidth,
+    aspect: window.innerWidth / window.innerHeight,
+}
+
 export const cameraPosition = {
     x: 2.365196560533881,
     y: 3.145626110602074,
@@ -15,8 +21,9 @@ export const cameraTarget = {
 export const texturesPaths = {
     base: "/textures/bg.webp",
     bed: "/textures/bed.webp",
+    rubicks_target_hover: "/textures/bed.webp",
     books: "/textures/books.webp",
-    chess: "/textures/chessboard.webp",
+    chess_target_hover: "/textures/chessboard.webp",
     chess_table: "/textures/chtable.webp",
     desktop: "/textures/desktop.webp",
     drawer: "/textures/drawer_vin_bask.webp",
@@ -30,16 +37,16 @@ export const texturesPaths = {
     plants: "/textures/plants.webp",
     ps5: "/textures/ps5.webp",
     wall: "/textures/wall.webp",
-    github_target: "/textures/github.webp",
-    jin_sakai_target: "/textures/jin_sakai.webp",
-    linkedin_target: "/textures/linkedin.webp",
-    malenia_target: "/textures/malenia.webp",
-    luv_sic: "/textures/luv.webp",
-    modal_soul: "/textures/soul.webp",
-    vagabond: "/textures/vagabond.webp",
+    github_target_logo: "/textures/github.webp",
+    jin_sakai_target_hover: "/textures/jin_sakai.webp",
+    linkedin_target_logo: "/textures/linkedin.webp",
+    malenia_target_hover: "/textures/malenia.webp",
+    luv_sic_target_wall: "/textures/luv.webp",
+    modal_soul_target_wall: "/textures/soul.webp",
+    vagabond_target_wall: "/textures/vagabond.webp",
 }
 
 export const socialLinks = {
-    github_target: "https://github.com/toranogix",
-    linkedin_target: "https://www.linkedin.com/",
+    github_target_logo: "https://github.com/toranogix",
+    linkedin_target_logo: "https://www.linkedin.com/",
 }

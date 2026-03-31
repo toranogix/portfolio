@@ -1,12 +1,15 @@
+
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
-import {params} from '../utils/utils.js'
-import {texturesPaths, cameraPosition, cameraTarget, socialLinks} from '../public/constants/constants.js'
-import GUI from 'lil-gui'; 
+import {texturesPaths, cameraPosition, cameraTarget, socialLinks, params} from '../public/constants/constants.js'
+import gui from '../public/debug/debug.js'
+// import {hoverEffect} from '../public/helper/helper.js'
 
 
+// debug panel
+gui()
 
 // variables
 let minCameraY = null;
@@ -15,47 +18,8 @@ let soundTrack = null
 const texturesMap = {}
 let objectsToIntersect = []
 let currentIntersects = null
-
-
-// params
-const size = {height: window.innerHeight, width: window.innerWidth}
-
-
-// debug panel
-const gui = new GUI();
-gui.title("Debug UI")
-
-const soundFolder = gui.addFolder("Sound")
-const soundObj = {
-    playSound: () => {
-        if (soundTrack?.isPlaying) {
-            soundTrack.stop()
-            return
-        }
-        if (!soundListener) {
-            soundListener = new THREE.AudioListener()
-            camera.add(soundListener)
-            soundTrack = new THREE.Audio(soundListener)
-            new THREE.AudioLoader().load("/audio/lis.mp3", (buffer) => {
-                soundTrack.setBuffer(buffer)
-                soundTrack.setLoop(true)
-                soundTrack.setVolume(0.2)
-                scene.add(soundTrack)
-                soundListener.context.resume().then(() => soundTrack.play())
-            })
-            return
-        }
-        if (soundTrack.buffer) {
-            soundListener.context.resume().then(() => soundTrack.play())
-        }
-    }
-}
-
-window.addEventListener('keydown', (event) => {
-    if(event.key === 'h'){
-        gui.show(gui._hidden);
-    }
-}) 
+let currentHoveredObject = null
+let currentHoveredWallObject = null
 
 
 // load video and display to screen
@@ -105,8 +69,8 @@ const raycaster = new THREE.Raycaster()
 
 const mouse = new THREE.Vector2()
 window.addEventListener('mousemove', (event) => {
-    mouse.x = event.clientX / size.width * 2 - 1,
-    mouse.y = - (event.clientY / size.height) * 2 + 1
+    mouse.x = event.clientX / params.width * 2 - 1,
+    mouse.y = - (event.clientY / params.height) * 2 + 1
 })
 window.addEventListener('click', () => {
     if(currentIntersects.length > 0){
@@ -164,9 +128,16 @@ loader.load("/model/room_portfolio.glb", (glb) => {
                 // list objects to intersect
                 if(child.name.includes("target")){
                     objectsToIntersect.push(child)
+
+                    // for hover effect
+                    child.userData.initialScale = new THREE.Vector3().copy(child.scale)
+                    child.userData.initialPosition = new THREE.Vector3().copy(child.position)
+                    child.userData.initialRotation = new THREE.Vector3().copy(child.rotation)
+                    child.userData.isAnimating = false
                 }
+
                 // give a material to threejs_logo
-                if(child.name.includes("threejs_logo")){
+                if(child.name.includes("threejs")){
                     const threejsMaterial = new THREE.MeshBasicMaterial({color: "#ffffff"});
                     child.material = threejsMaterial;
                     child.material.needsUpdate = true;
@@ -181,6 +152,7 @@ loader.load("/model/room_portfolio.glb", (glb) => {
             }
         });
         glb.scene.scale.setScalar(0.08)
+        console.log(glb.scene)
         scene.add(glb.scene);
 
         // calculate the limit of the camera using the bounding box of the scene
@@ -220,13 +192,7 @@ function animate() {
     currentIntersects = raycaster.intersectObjects(objectsToIntersect)
     for(const intersect of currentIntersects){
     }
-    
+
     renderer.render(scene, camera)
 }
 animate()
-
-
-
-/*************************** TWEAKS ***************************/
-soundFolder.add(soundObj, "playSound").name("Play/stop sound")
-
