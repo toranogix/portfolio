@@ -30,11 +30,16 @@ export const texturesPaths = {
     plants: "/textures/plants.webp",
     ps5: "/textures/ps5.webp",
     wall: "/textures/wall.webp",
-    github_target: "textures/github.webp",
+    github_target: "/textures/github.webp",
     jin_sakai_target: "/textures/jin_sakai.webp",
     linkedin_target: "/textures/linkedin.webp",
     malenia_target: "/textures/malenia.webp",
     luv_sic: "/textures/luv.webp",
     modal_soul: "/textures/soul.webp",
     vagabond: "/textures/vagabond.webp",
+}
+
+export const socialLinks = {
+    github_target: "https://github.com/toranogix",
+    linkedin_target: "https://www.linkedin.com/",
 }

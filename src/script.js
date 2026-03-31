@@ -3,7 +3,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
 import {params} from '../utils/utils.js'
-import {texturesPaths, cameraPosition, cameraTarget} from '../public/constants/constants.js'
+import {texturesPaths, cameraPosition, cameraTarget, socialLinks} from '../public/constants/constants.js'
 import GUI from 'lil-gui'; 
 
 
@@ -12,19 +12,18 @@ import GUI from 'lil-gui';
 let minCameraY = null;
 let soundListener = null
 let soundTrack = null
+const texturesMap = {}
+let objectsToIntersect = []
 let currentIntersects = null
 
+
 // params
-const size = {
-    height: window.innerHeight,
-    width: window.innerWidth
-}
+const size = {height: window.innerHeight, width: window.innerWidth}
 
 
 // debug panel
 const gui = new GUI();
 gui.title("Debug UI")
-gui.show(gui._hidden);
 
 const soundFolder = gui.addFolder("Sound")
 const soundObj = {
@@ -52,7 +51,6 @@ const soundObj = {
     }
 }
 
-// show/hide debug panel
 window.addEventListener('keydown', (event) => {
     if(event.key === 'h'){
         gui.show(gui._hidden);
@@ -73,7 +71,6 @@ const videoTexture = new THREE.VideoTexture(video)
 videoTexture.colorSpace = THREE.SRGBColorSpace;
 videoTexture.repeat.set(1, 1.5)
 videoTexture.offset.set(0, 0)
-
 
 
 /* scene*/
@@ -104,13 +101,28 @@ window.addEventListener('resize', () => {
 })
 
 /* raycaster + get mouse mouvement */
-const mouse = new THREE.Vector2()
-windows.addEventListener('mousemove', (event) => {
-    mouse.x = event.clientX / size.width * 2 - 1,
-    mouse.y = - (event.cientY / size.height) * 2 + 1
-})
-const raycaster = new THREE.RayCaster()
+const raycaster = new THREE.Raycaster()
 
+const mouse = new THREE.Vector2()
+window.addEventListener('mousemove', (event) => {
+    mouse.x = event.clientX / size.width * 2 - 1,
+    mouse.y = - (event.clientY / size.height) * 2 + 1
+})
+window.addEventListener('click', () => {
+    if(currentIntersects.length > 0){
+        const object = currentIntersects[0].object
+        Object.entries(socialLinks).forEach(([key, url]) => {
+            if(object.name.includes(key)){
+                const newWindow = window.open()
+                newWindow.opener = null
+                newWindow.location = url
+                newWindow.target = "_blank"
+                newWindow.rel = "noopener noreferrer"
+
+            }
+        })
+    }
+})
 
 
 /* controls */
@@ -123,14 +135,10 @@ controls.minPolarAngle = Math.PI * 0.2;
 controls.maxPolarAngle = Math.PI * 0.49;
 controls.target.set(cameraTarget.x, cameraTarget.y, cameraTarget.z)
 
-/* textures map */
-const texturesMap = {};
-
-/* loader + texture loader */
+/* textures map + loader */
 const dracoLoader = new DRACOLoader()
 dracoLoader.setDecoderPath('/draco/')
 dracoLoader.preload()
-
 const textureLoader = new THREE.TextureLoader();
 Object.entries(texturesPaths).forEach(([key, path]) => {
     textureLoader.load(path, (texture) => {
@@ -152,7 +160,11 @@ loader.load("/model/room_portfolio.glb", (glb) => {
                     child.material.needsUpdate = true;
                 }
                 });
-                
+
+                // list objects to intersect
+                if(child.name.includes("target")){
+                    objectsToIntersect.push(child)
+                }
                 // give a material to threejs_logo
                 if(child.name.includes("threejs_logo")){
                     const threejsMaterial = new THREE.MeshBasicMaterial({color: "#ffffff"});
@@ -205,6 +217,9 @@ function animate() {
     
     // raycaster elements
     raycaster.setFromCamera(mouse, camera)
+    currentIntersects = raycaster.intersectObjects(objectsToIntersect)
+    for(const intersect of currentIntersects){
+    }
     
     renderer.render(scene, camera)
 }
