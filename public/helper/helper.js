@@ -9,7 +9,7 @@ import gsap from 'gsap'
  * @returns {void}
  */
 export function hoverEffect(object, isHovering, scale){
-    if(object.userData.isAnimating) return;
+    gsap.killTweensOf(object.scale);
 
     object.userData.isAnimating = true;
     if(isHovering){
@@ -18,36 +18,33 @@ export function hoverEffect(object, isHovering, scale){
             y: object.userData.initialScale.y * scale,
             z: object.userData.initialScale.z * scale,
             duration: 0.5,
-            ease: "bounce.in(1.8)",
-            onComplete: () => {
-                object.userData.isAnimating = false;
+            ease: "back.out(2)",    
+        })
+        
+        // add rotation effect to github and linkedin logos
+        if(object.name.includes("github") || object.name.includes("linkedin")){
+            gsap.to(object.rotation, {
+                y: object.userData.initialRotation.y - Math.PI / 10,
+                duration: 0.5,
+                ease: "back.out(2)",
+            })
+        }
+
+    } else {
+            gsap.to(object.scale, {
+                x: object.userData.initialScale.x,
+                y: object.userData.initialScale.y,
+                z: object.userData.initialScale.z,
+                duration: 0.3,
+                ease: "back.out(2)",
+            });
+
+            if(object.name.includes("github") || object.name.includes("linkedin")){
+                gsap.to(object.rotation, {
+                    y: object.userData.initialRotation.y,
+                    duration: 0.5,
+                    ease: "back.out(2)",
+                })
             }
-        });
-    }
-}
-
-
-/**
- * Hover effect for a wall object
- * @param {THREE.Object3D} object 
- * @param {boolean} isHovering - true if the object is being hovered, false otherwise
- * @param {number} scale - the scale of the object when hovered
- * @returns {void}
- */
-export function hoverEffectWall(object, isHovering, scale){
-    if(object.userData.isAnimating) return;
-
-    object.userData.isAnimating = true;
-    if(isHovering){
-        gsap.to(object.scale, {
-            x: object.userData.initialScale.x * scale,
-            y: object.userData.initialScale.y * scale,
-            z: object.userData.initialScale.z * scale,
-            duration: 0.5,
-            ease: "bounce.in(1.8)",
-            onComplete: () => {
-                object.userData.isAnimating = false;
-            }
-        });
-    }
+        }
 }

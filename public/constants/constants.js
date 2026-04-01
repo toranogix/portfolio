@@ -41,9 +41,9 @@ export const texturesPaths = {
     jin_sakai_target_hover: "/textures/jin_sakai.webp",
     linkedin_target_logo: "/textures/linkedin.webp",
     malenia_target_hover: "/textures/malenia.webp",
-    luv_sic_target_wall: "/textures/luv.webp",
-    modal_soul_target_wall: "/textures/soul.webp",
-    vagabond_target_wall: "/textures/vagabond.webp",
+    luv_sic_target_paper: "/textures/luv.webp",
+    modal_soul_target_paper: "/textures/soul.webp",
+    vagabond_target_paper: "/textures/vagabond.webp",
 }
 
 export const socialLinks = {

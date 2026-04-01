@@ -123,13 +123,13 @@ loader.load("/model/room_portfolio.glb", (glb) => {
                 });
 
                 // list objects to intersect
-                if(child.name.includes("target")){
+                if(child.name.includes("target") || child.name.includes("paper")){
                     objectsToIntersect.push(child)
                 }
-                if(child.name.includes("hover")){
-
-                    // for hover effect 
+                if(child.name.includes("hover") || child.name.includes("wall") || child.name.includes("target") || child.name.includes("paper")){
                     child.userData.initialScale = new THREE.Vector3().copy(child.scale)
+                    child.userData.initialPosition = new THREE.Vector3().copy(child.position)
+                    child.userData.initialRotation = new THREE.Vector3().copy(child.rotation)
                     child.userData.isAnimating = false
                 }
 
@@ -192,9 +192,24 @@ function animate() {
     // raycaster elements
     raycaster.setFromCamera(mouse, camera)
     currentIntersects = raycaster.intersectObjects(objectsToIntersect)
-    for(const intersect of currentIntersects){
+    if(currentIntersects.length > 0){
+
+        // hover effect for the intersected object
+        const currentIntersectedObject = currentIntersects[0].object
+        if(currentIntersectedObject !== currentHoveredObject){
+            if(currentHoveredObject){
+                hoverEffect(currentHoveredObject, false, 1)
+            }
+            currentHoveredObject = currentIntersectedObject
+            hoverEffect(currentHoveredObject, true, 1.4)
+        }
+    } else {
+        if(currentHoveredObject){
+            hoverEffect(currentHoveredObject, false, 1)
+            currentHoveredObject = null
+        }
+    }
+        renderer.render(scene, camera)
     }
 
-    renderer.render(scene, camera)
-}
 animate()
