@@ -1,5 +1,6 @@
 
 import gsap from 'gsap'
+import * as THREE from 'three'
 
 /**
  * Hover effect for an object
@@ -10,6 +11,7 @@ import gsap from 'gsap'
  */
 export function hoverEffect(object, isHovering, scale){
     gsap.killTweensOf(object.scale);
+    gsap.killTweensOf(object.rotation);
 
     object.userData.isAnimating = true;
     if(isHovering){
@@ -47,4 +49,27 @@ export function hoverEffect(object, isHovering, scale){
                 })
             }
         }
+}
+
+
+/**
+ * Load a video texture
+ * @param {string} path - the path to the video texture
+ * @param {number} offSetX - the offset of the video texture on the x axis
+ * @param {number} offSetY - the offset of the video texture on the y axis
+ * @returns {THREE.VideoTexture}
+ */
+export function loadVideoTexture(path, offSetX, offSetY){
+    const video = document.createElement('video')
+    video.src = path
+    video.loop = true
+    video.muted = true
+    video.playsInline = true
+    video.autoplay = true
+    video.play()
+    const videoTexture = new THREE.VideoTexture(video)
+    videoTexture.flipY = true
+    videoTexture.colorSpace = THREE.SRGBColorSpace;
+    videoTexture.offset.set(offSetX, offSetY)
+    return videoTexture
 }

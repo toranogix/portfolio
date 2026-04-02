@@ -4,6 +4,7 @@ export const params = {
     height: window.innerHeight,
     width: window.innerWidth,
     aspect: window.innerWidth / window.innerHeight,
+    videoTexturePath: "/video/game.mp4"
 }
 
 export const cameraPosition = {

@@ -5,7 +5,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
 import {texturesPaths, cameraPosition, cameraTarget, socialLinks, params} from '../public/constants/constants.js'
 import gui from '../public/debug/debug.js'
-import {hoverEffect} from '../public/helper/helper.js'
+import {hoverEffect, loadVideoTexture} from '../public/helper/helper.js'
 
 
 
@@ -17,21 +17,13 @@ const texturesMap = {}
 let objectsToIntersect = []
 let currentIntersects = null
 let currentHoveredObject = null
-let currentHoveredWallObject = null
+let gisLetters = []
 
+const gisLetterAnim = { peak: 0.2, periodSec: 3.5, staggerSec: 0.35 }
 
 // load video and display to screen
-const video = document.createElement('video')
-video.src = "/video/game.mp4"
-video.loop = true
-video.muted = true
-video.playsInline = true
-video.autoplay = true
-video.play()
-const videoTexture = new THREE.VideoTexture(video)
-videoTexture.flipY = true
-videoTexture.colorSpace = THREE.SRGBColorSpace;
-videoTexture.offset.set(0.25, -0.135);
+const desktopScreenVideoTexture = loadVideoTexture(params.videoTexturePath, 0.25, -0.135);
+const masScreenVideoTexture = loadVideoTexture(params.videoTexturePath, 0, 0);
 
 /* scene*/
 const canvas = document.querySelector('canvas.webgl')
@@ -63,14 +55,18 @@ window.addEventListener('resize', () => {
 
 /* raycaster + get mouse mouvement */
 const raycaster = new THREE.Raycaster()
-
 const mouse = new THREE.Vector2()
+const touch = new THREE.Vector2()
 window.addEventListener('mousemove', (event) => {
     mouse.x = event.clientX / params.width * 2 - 1,
     mouse.y = - (event.clientY / params.height) * 2 + 1
 })
+window.addEventListener('touchmove', (event) => {
+    touch.x = event.clientX / params.width * 2 - 1,
+    touch.y = - (event.clientY / params.height) * 2 + 1
+})
 window.addEventListener('click', () => {
-    if(currentIntersects.length > 0){
+    if(currentIntersects && currentIntersects.length > 0){
         const object = currentIntersects[0].object
         Object.entries(socialLinks).forEach(([key, url]) => {
             if(object.name.includes(key)){
@@ -90,7 +86,7 @@ window.addEventListener('click', () => {
 const controls = new OrbitControls(camera, canvas)
 controls.enableDamping = true
 // controls.enablePan = false;
-controls.minDistance = 3;
+// controls.minDistance = 3;
 controls.maxDistance = 10;
 controls.minPolarAngle = Math.PI * 0.2;
 controls.maxPolarAngle = Math.PI * 0.49;
@@ -123,10 +119,16 @@ loader.load("/model/room_portfolio.glb", (glb) => {
                 });
 
                 // list objects to intersect
-                if(child.name.includes("target") || child.name.includes("paper")){
+                if(child.name.includes("target")){
                     objectsToIntersect.push(child)
                 }
-                if(child.name.includes("hover") || child.name.includes("wall") || child.name.includes("target") || child.name.includes("paper")){
+                // list letters to animate
+                if(child.name.includes("gis_letter")){
+                    child.userData.initialPosition = new THREE.Vector3().copy(child.position)
+                    gisLetters.push(child)
+                }
+                if(child.name.includes("hover") || child.name.includes("wall") || child.name.includes("target")
+                    || child.name.includes("paper")){
                     child.userData.initialScale = new THREE.Vector3().copy(child.scale)
                     child.userData.initialPosition = new THREE.Vector3().copy(child.position)
                     child.userData.initialRotation = new THREE.Vector3().copy(child.rotation)
@@ -139,16 +141,30 @@ loader.load("/model/room_portfolio.glb", (glb) => {
                     child.material = threejsMaterial;
                     child.material.needsUpdate = true;
                 }
+                if(child.name.includes("gis")){
+                    const gisMaterial = new THREE.MeshStandardMaterial({emissive: "#FF9536",emissiveIntensity: 1});
+                    child.material = gisMaterial
+                    child.material.needsUpdate = true
+                }
+                if(child.name.includes("gis_base")){
+                    const gisMaterialBase = new THREE.MeshStandardMaterial({color: "#582f0e"});
+                    child.material = gisMaterialBase
+                    child.material.needsUpdate = true
+                }
+                if(child.name.includes("lis")){
+                    const lisMaterial = new THREE.MeshStandardMaterial({emissive: "#FFB3F3",emissiveIntensity: 1});
+                    child.material = lisMaterial
+                    child.material.needsUpdate = true
+                }
 
                 // video material
                 if (child.name.includes("desktop_screen")){
-                    const videoMaterial = new THREE.MeshBasicMaterial({map: videoTexture})
+                    const videoMaterial = new THREE.MeshBasicMaterial({map: desktopScreenVideoTexture})
                     child.material = videoMaterial;
                 }
                 if (child.name.includes("mac_screen")){
                     const videoMaterial = new THREE.MeshBasicMaterial({
-                        color: "#ff0000",
-                        // map: videoTexture
+                        map: masScreenVideoTexture
                     })
                     child.material = videoMaterial;
                 }
@@ -156,6 +172,7 @@ loader.load("/model/room_portfolio.glb", (glb) => {
         });
         glb.scene.scale.setScalar(0.08)
         scene.add(glb.scene);
+        gisLetters.sort((a, b) => a.name.localeCompare(b.name))
 
         // calculate the limit of the camera using the bounding box of the scene
         // without the background   
@@ -178,8 +195,12 @@ loader.load("/model/room_portfolio.glb", (glb) => {
 
 
 
+const clock = new THREE.Clock()
+
 /* animate*/
 function animate() {
+
+    const elapsedTime = clock.getElapsedTime()
     window.requestAnimationFrame(animate)
     controls.update()
 
@@ -188,6 +209,16 @@ function animate() {
         camera.position.y = minCameraY;
         controls.target.y = Math.max(controls.target.y, minCameraY);
     }
+
+    // animate gis letters
+    const { peak, periodSec, staggerSec } = gisLetterAnim
+    const omega = (2 * Math.PI) / periodSec
+    gisLetters.forEach((letter, index) => {
+        const y0 = letter.userData.initialPosition.y
+        const phase = index * staggerSec * omega
+        const w = 0.5 + 0.5 * Math.sin(elapsedTime * omega + phase)
+        letter.position.y = y0 + peak * w
+    })
     
     // raycaster elements
     raycaster.setFromCamera(mouse, camera)
