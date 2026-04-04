@@ -226,7 +226,7 @@ function animate(timestamps) {
         gamingChairTop.rotation.y = gamingChairTop.userData.initialRotation.y + rotationOffset;
     }
     if(vinylDisk){
-        const time = timestamps * 0.002
+        const time = timestamps * 0.0015
         vinylDisk.rotation.y = vinylDisk.userData.initialRotation.y + time
     }
 
