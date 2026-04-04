@@ -49,7 +49,6 @@ export const texturesPaths = {
     minibox_2_target_hover: "textures/desktop.webp",
     minibox_3_target_hover: "textures/desktop.webp",
     lamp_target_hover: "textures/bed.webp",
-    disk_vinyl: "textures/drawer_vin_bask.webp",
     vinyl: "textures/drawer_vin_bask.webp",
     mug_target_hover: "textures/desktop.webp",
     ball_target_hover: "textures/drawer_vin_bask.webp"

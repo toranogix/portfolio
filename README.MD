@@ -31,7 +31,7 @@ This work is based on "Custom - Mechanical Keyboard" (https://sketchfab.com/3d-m
 This work is based on "MacBook" (https://sketchfab.com/3d-models/macbook-289c013e6c0541f498d4c6b40045db88) by M I H (https://sketchfab.com/imamulhasan) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
 - `Naruto headbands`:    
 This work is based on "Naruto Headbands" (https://sketchfab.com/3d-models/naruto-headbands-67e8c1ecb0f24d16af9d51bd296bfd2d) by Calfan (https://sketchfab.com/Calfan) licensed under CC-BY-NC-4.0 (http://creativecommons.org/licenses/by-nc/4.0/)
-
+- `Life is Strange Sound Night Ambiance`: by `Porschel` => [YouTube link](https://www.youtube.com/watch?v=K2xcLjFnd6k&list=RDK2xcLjFnd6k&start_radio=1)
 
 This work is inspired by :
 -  [Bruno Simon's room](https://my-room-in-3d.vercel.app/) by Bruno Simon

@@ -16,7 +16,7 @@ let currentIntersects = null
 let currentHoveredObject = null
 let gisLetters = []
 let gamingChairTop = null
-
+let vinylDisk = null
 const gisLetterAnim = { peak: 0.2, periodSec: 3.5, staggerSec: 0.35 }
 
 // load video and display to screen
@@ -83,8 +83,8 @@ window.addEventListener('click', () => {
 /* controls */
 const controls = new OrbitControls(camera, canvas)
 controls.enableDamping = true
-// controls.enablePan = false;
-// controls.minDistance = 3;
+controls.enablePan = false;
+controls.minDistance = 3;
 controls.maxDistance = 10;
 controls.minAzimuthAngle = Math.PI * 0.5;
 controls.maxAzimuthAngle = - Math.PI;
@@ -135,8 +135,12 @@ loader.load("/model/room_portfolio.glb", (glb) => {
                     child.userData.isAnimating = false
                 }
                 
-                if(child.name.includes("gaming_chair_head")){
+                if(child.name.includes("gaming_chair_head_rotate")){
                     gamingChairTop = child
+                    child.userData.initialRotation = new THREE.Euler().copy(child.rotation);
+                }
+                if(child.name.includes("vinyl_disk")){
+                    vinylDisk = child
                     child.userData.initialRotation = new THREE.Euler().copy(child.rotation);
                 }
                 // give a material to threejs_logo
@@ -214,13 +218,18 @@ function animate(timestamps) {
         controls.target.y = Math.max(controls.target.y, minCameraY);
     }
 
-    // rotate gaming chair
+    // rotate gaming chair and vinyl disk
     if(gamingChairTop){
         const time = timestamps *  0.001
-        const baseAmplitude = Math.PI / 2
+        const baseAmplitude = Math.PI / 5
         const rotationOffset = baseAmplitude * Math.sin(time * 0.5) * (1 - Math.abs(Math.sin(time * 0.5)) * 0.3);
         gamingChairTop.rotation.y = gamingChairTop.userData.initialRotation.y + rotationOffset;
     }
+    if(vinylDisk){
+        const time = timestamps * 0.002
+        vinylDisk.rotation.y = vinylDisk.userData.initialRotation.y + time
+    }
+
 
     // animate gis letters
     const { peak, periodSec, staggerSec } = gisLetterAnim
@@ -235,7 +244,7 @@ function animate(timestamps) {
     // raycaster elements
     raycaster.setFromCamera(mouse, camera)
     currentIntersects = raycaster.intersectObjects(objectsToIntersect)
-    if(currentIntersects.length > 0){
+    if(currentIntersects && currentIntersects.length > 0){
 
         // hover effect for the intersected object
         const currentIntersectedObject = currentIntersects[0].object
