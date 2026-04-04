@@ -45,6 +45,14 @@ export const texturesPaths = {
     luv_sic_target_paper: "/textures/luv.webp",
     modal_soul_target_paper: "/textures/soul.webp",
     vagabond_target_paper: "/textures/vagabond.webp",
+    minibox_1_target_hover: "textures/desktop.webp",
+    minibox_2_target_hover: "textures/desktop.webp",
+    minibox_3_target_hover: "textures/desktop.webp",
+    lamp_target_hover: "textures/bed.webp",
+    disk_vinyl: "textures/drawer_vin_bask.webp",
+    vinyl: "textures/drawer_vin_bask.webp",
+    mug_target_hover: "textures/desktop.webp",
+    ball_target_hover: "textures/drawer_vin_bask.webp"
 }
 
 export const socialLinks = {

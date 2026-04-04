@@ -9,15 +9,13 @@ import {hoverEffect, loadVideoTexture} from '../public/helper/helper.js'
 
 
 
-// variables
 let minCameraY = null;
-let soundListener = null
-let soundTrack = null
 const texturesMap = {}
 let objectsToIntersect = []
 let currentIntersects = null
 let currentHoveredObject = null
 let gisLetters = []
+let gamingChairTop = null
 
 const gisLetterAnim = { peak: 0.2, periodSec: 3.5, staggerSec: 0.35 }
 
@@ -88,6 +86,8 @@ controls.enableDamping = true
 // controls.enablePan = false;
 // controls.minDistance = 3;
 controls.maxDistance = 10;
+controls.minAzimuthAngle = Math.PI * 0.5;
+controls.maxAzimuthAngle = - Math.PI;
 controls.minPolarAngle = Math.PI * 0.2;
 controls.maxPolarAngle = Math.PI * 0.49;
 controls.target.set(cameraTarget.x, cameraTarget.y, cameraTarget.z)
@@ -134,7 +134,11 @@ loader.load("/model/room_portfolio.glb", (glb) => {
                     child.userData.initialRotation = new THREE.Vector3().copy(child.rotation)
                     child.userData.isAnimating = false
                 }
-
+                
+                if(child.name.includes("gaming_chair_head")){
+                    gamingChairTop = child
+                    child.userData.initialRotation = new THREE.Euler().copy(child.rotation);
+                }
                 // give a material to threejs_logo
                 if(child.name.includes("threejs")){
                     const threejsMaterial = new THREE.MeshBasicMaterial({color: "#ffffff"});
@@ -198,7 +202,7 @@ loader.load("/model/room_portfolio.glb", (glb) => {
 const clock = new THREE.Clock()
 
 /* animate*/
-function animate() {
+function animate(timestamps) {
 
     const elapsedTime = clock.getElapsedTime()
     window.requestAnimationFrame(animate)
@@ -208,6 +212,14 @@ function animate() {
     if (minCameraY !== null && camera.position.y < minCameraY) {
         camera.position.y = minCameraY;
         controls.target.y = Math.max(controls.target.y, minCameraY);
+    }
+
+    // rotate gaming chair
+    if(gamingChairTop){
+        const time = timestamps *  0.001
+        const baseAmplitude = Math.PI / 2
+        const rotationOffset = baseAmplitude * Math.sin(time * 0.5) * (1 - Math.abs(Math.sin(time * 0.5)) * 0.3);
+        gamingChairTop.rotation.y = gamingChairTop.userData.initialRotation.y + rotationOffset;
     }
 
     // animate gis letters
@@ -232,7 +244,7 @@ function animate() {
                 hoverEffect(currentHoveredObject, false, 1)
             }
             currentHoveredObject = currentIntersectedObject
-            hoverEffect(currentHoveredObject, true, 1.4)
+            hoverEffect(currentHoveredObject, true, 1.3)
         }
     } else {
         if(currentHoveredObject){
