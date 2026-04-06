@@ -7,12 +7,15 @@ import GUI from 'lil-gui'
  * GUI panel
  * @param {THREE.Camera} camera 
  * @param {THREE.Scene} scene 
+ * @param {Mesh} vinyl disk mesh 
  * @returns {void}
  */
-export default function gui(camera, scene){
+export default function gui(camera, scene, vinylDisk){
     let soundListener = null
     let soundTrack = null
     const gui = new GUI();
+
+    const state = {isPlaying: false}
     gui.title("Debug UI")
     
     const soundFolder = gui.addFolder("Sound")
@@ -20,6 +23,7 @@ export default function gui(camera, scene){
         playSound: () => {
             if (soundTrack?.isPlaying) {
                 soundTrack.stop()
+                state.isPlaying = false
                 return
             }
             if (!soundListener) {
@@ -31,12 +35,18 @@ export default function gui(camera, scene){
                     soundTrack.setLoop(true)
                     soundTrack.setVolume(0.2)
                     scene.add(soundTrack)
-                    soundListener.context.resume().then(() => soundTrack.play())
+                    soundListener.context.resume().then(() => {
+                        soundTrack.play()
+                        state.isPlaying = true
+                    })
                 })
                 return
             }
             if (soundTrack.buffer) {
-                soundListener.context.resume().then(() => soundTrack.play())
+                soundListener.context.resume().then(() => {
+                    soundTrack.play()
+                    state.isPlaying = true
+                })
             }
         }
     }
@@ -48,4 +58,6 @@ export default function gui(camera, scene){
     })
     /*---------------------- tweaks ----------------------*/
     soundFolder.add(soundObj, "playSound").name("Play/stop sound")
+
+    return state
 }

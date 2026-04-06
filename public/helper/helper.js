@@ -9,9 +9,30 @@ import * as THREE from 'three'
  * @param {number} scale - the scale of the object when hovered
  * @returns {void}
  */
-export function hoverEffect(object, isHovering, scale){
+export function hoverEffect(object, isHovering, scale, smoke){
     gsap.killTweensOf(object.scale);
     gsap.killTweensOf(object.rotation);
+
+    if (object.name.includes("mug_target_hover")) {
+        gsap.killTweensOf(smoke.scale);
+        if (isHovering) {
+          gsap.to(smoke.scale, {
+            x: 1.3,
+            y: 1.3,
+            z: 1.3,
+            duration: 0.5,
+            ease: "back.out(2)",
+          });
+        } else {
+          gsap.to(smoke.scale, {
+            x: 1,
+            y: 1,
+            z: 1,
+            duration: 0.3,
+            ease: "back.out(2)",
+          });
+        }
+      }
 
     object.userData.isAnimating = true;
     if(isHovering){

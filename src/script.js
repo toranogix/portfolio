@@ -6,7 +6,8 @@ import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
 import {texturesPaths, cameraPosition, cameraTarget, socialLinks, params} from '../public/constants/constants.js'
 import gui from '../public/debug/debug.js'
 import {hoverEffect, loadVideoTexture} from '../public/helper/helper.js'
-
+import smokeVertexShader from "../public/shaders/smoke/vertex.glsl?raw";
+import smokeFragmentShader from "../public/shaders/smoke/fragment.glsl?raw";
 
 
 let minCameraY = null;
@@ -31,7 +32,7 @@ const scene = new THREE.Scene()
 const camera = new THREE.PerspectiveCamera(35, params.aspect, 0.1, 100)
 camera.position.set(cameraPosition.x, cameraPosition.y, cameraPosition.z)
 scene.add(camera)
-gui(camera, scene)
+const state = gui(camera, scene, vinylDisk)
 
 /* lights*/
 const ambientLight = new THREE.AmbientLight(0xffffff, 6);
@@ -83,11 +84,11 @@ window.addEventListener('click', () => {
 /* controls */
 const controls = new OrbitControls(camera, canvas)
 controls.enableDamping = true
-controls.enablePan = false;
-controls.minDistance = 3;
+// controls.enablePan = false;
+// controls.minDistance = 3;
 controls.maxDistance = 10;
-controls.minAzimuthAngle = Math.PI * 0.5;
-controls.maxAzimuthAngle = - Math.PI;
+// controls.minAzimuthAngle = Math.PI * 0.5;
+// controls.maxAzimuthAngle = - Math.PI;
 controls.minPolarAngle = Math.PI * 0.2;
 controls.maxPolarAngle = Math.PI * 0.49;
 controls.target.set(cameraTarget.x, cameraTarget.y, cameraTarget.z)
@@ -141,6 +142,7 @@ loader.load("/model/room_portfolio.glb", (glb) => {
                 }
                 if(child.name.includes("vinyl_disk")){
                     vinylDisk = child
+                    child.userData.initialPosition = new THREE.Euler().copy(child.position);
                     child.userData.initialRotation = new THREE.Euler().copy(child.rotation);
                 }
                 // give a material to threejs_logo
@@ -202,6 +204,32 @@ loader.load("/model/room_portfolio.glb", (glb) => {
     });
 
 
+// coffe mug => add smoke
+const smokeGeometry = new THREE.PlaneGeometry(1, 1, 16, 64)
+smokeGeometry.translate(0, 0.5, 0)
+smokeGeometry.scale(0.03, 0.1, 0.03)
+const perlinTexture = textureLoader.load("/textures/perlin.png");
+perlinTexture.wrapS = THREE.RepeatWrapping;
+perlinTexture.wrapT = THREE.RepeatWrapping;
+
+
+const smokeMaterial = new THREE.ShaderMaterial({
+    vertexShader: smokeVertexShader,
+    fragmentShader: smokeFragmentShader,
+    uniforms: {
+      uTime: new THREE.Uniform(0),
+      uPerlinTexture: new THREE.Uniform(perlinTexture),
+    },
+    side: THREE.DoubleSide,
+    transparent: true,
+    depthWrite: false,
+  });
+
+const smoke = new THREE.Mesh(smokeGeometry, smokeMaterial)
+smoke.position.set(-0.119, 1.90, 0.01)
+scene.add(smoke)
+
+
 
 const clock = new THREE.Clock()
 
@@ -211,6 +239,9 @@ function animate(timestamps) {
     const elapsedTime = clock.getElapsedTime()
     window.requestAnimationFrame(animate)
     controls.update()
+
+    // update smoke
+    smokeMaterial.uniforms.uTime.value = elapsedTime
 
     // clamp the camera position to the minimum camera y
     if (minCameraY !== null && camera.position.y < minCameraY) {
@@ -225,7 +256,7 @@ function animate(timestamps) {
         const rotationOffset = baseAmplitude * Math.sin(time * 0.5) * (1 - Math.abs(Math.sin(time * 0.5)) * 0.3);
         gamingChairTop.rotation.y = gamingChairTop.userData.initialRotation.y + rotationOffset;
     }
-    if(vinylDisk){
+    if(state.isPlaying && vinylDisk){
         const time = timestamps * 0.0015
         vinylDisk.rotation.y = vinylDisk.userData.initialRotation.y + time
     }
@@ -250,14 +281,14 @@ function animate(timestamps) {
         const currentIntersectedObject = currentIntersects[0].object
         if(currentIntersectedObject !== currentHoveredObject){
             if(currentHoveredObject){
-                hoverEffect(currentHoveredObject, false, 1)
+                hoverEffect(currentHoveredObject, false, 1, smoke)
             }
             currentHoveredObject = currentIntersectedObject
-            hoverEffect(currentHoveredObject, true, 1.3)
+            hoverEffect(currentHoveredObject, true, 1.3, smoke)
         }
     } else {
         if(currentHoveredObject){
-            hoverEffect(currentHoveredObject, false, 1)
+            hoverEffect(currentHoveredObject, false, 1, smoke)
             currentHoveredObject = null
         }
     }

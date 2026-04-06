@@ -51,6 +51,7 @@ export const texturesPaths = {
     lamp_target_hover: "textures/bed.webp",
     vinyl: "textures/drawer_vin_bask.webp",
     mug_target_hover: "textures/desktop.webp",
+    mug_support: "textures/desktop.webp",
     ball_target_hover: "textures/drawer_vin_bask.webp"
 }
 
