@@ -10,13 +10,14 @@ import GUI from 'lil-gui'
  * @param {Mesh} vinyl disk mesh 
  * @returns {void}
  */
-export default function gui(camera, scene, vinylDisk){
+export default function gui(camera, scene){
     let soundListener = null
     let soundTrack = null
     const gui = new GUI();
+    gui.close()
 
     const state = {isPlaying: false}
-    gui.title("Debug UI")
+    gui.title("UI")
     
     const soundFolder = gui.addFolder("Sound")
     const soundObj = {
