@@ -22,6 +22,7 @@ export const cameraTarget = {
 export const texturesPaths = {
     base: "/textures/bg.webp",
     bed: "/textures/bed.webp",
+    bed_cover: "/textures/bed_cover.webp",
     rubicks_target_hover: "/textures/bed.webp",
     books: "/textures/books.webp",
     chess_target_hover: "/textures/chessboard.webp",
