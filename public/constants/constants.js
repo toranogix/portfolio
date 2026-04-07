@@ -52,10 +52,10 @@ export const texturesPaths = {
     vinyl: "textures/drawer_vin_bask.webp",
     mug_target_hover: "textures/desktop.webp",
     mug_support: "textures/desktop.webp",
-    ball_target_hover: "textures/drawer_vin_bask.webp"
+    ball: "textures/drawer_vin_bask.webp"
 }
 
 export const socialLinks = {
     github_target_logo: "https://github.com/toranogix",
-    linkedin_target_logo: "https://www.linkedin.com/",
+    linkedin_target_logo: "https://www.linkedin.com/in/cheick-oumar-diallo-b3122920a/",
 }

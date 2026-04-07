@@ -8,6 +8,7 @@ import gui from '../public/debug/debug.js'
 import {hoverEffect, loadVideoTexture} from '../public/helper/helper.js'
 import smokeVertexShader from "../public/shaders/smoke/vertex.glsl?raw";
 import smokeFragmentShader from "../public/shaders/smoke/fragment.glsl?raw";
+import { time } from 'three/tsl';
 
 
 let minCameraY = null;
@@ -19,6 +20,8 @@ let gisLetters = []
 let gamingChairTop = null
 let vinylDisk = null
 const gisLetterAnim = { peak: 0.2, periodSec: 3.5, staggerSec: 0.35 }
+let ball = null
+
 
 // load video and display to screen
 const desktopScreenVideoTexture = loadVideoTexture(params.videoTexturePath, 0.25, -0.135);
@@ -175,6 +178,11 @@ loader.load("/model/room_portfolio.glb", (glb) => {
                     child.material = lisMaterial
                     child.material.needsUpdate = true
                 }
+                if(child.name.includes("ball")){
+                    ball = child
+                    child.userData.initialPosition = new THREE.Vector3().copy(child.position)
+                    child.userData.isAnimating = false
+                }
 
                 // video material
                 if (child.name.includes("desktop_screen")){
@@ -270,6 +278,11 @@ function animate(timestamps) {
         vinylDisk.rotation.y = vinylDisk.userData.initialRotation.y + time
     }
 
+    // move ball up and down
+    if(ball){
+        const time = timestamps * 0.002
+        ball.position.y = 0.4 + ball.userData.initialPosition.y + 0.5 * Math.sin(time)
+    }
 
     // animate gis letters
     const { peak, periodSec, staggerSec } = gisLetterAnim
