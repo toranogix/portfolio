@@ -106,6 +106,9 @@ Object.entries(texturesPaths).forEach(([key, path]) => {
     });
 });
 
+const bedCover = textureLoader.load("/textures/bed_cover.webp")
+bedCover.flipY = false
+bedCover.colorSpace = THREE.SRGBColorSpace
 
 const loader = new GLTFLoader();
 loader.setDRACOLoader(dracoLoader);
@@ -138,9 +141,6 @@ loader.load("/model/room_portfolio.glb", (glb) => {
                 }
                 
                 if(child.name.includes("bed_cover")){
-                    const bedCover = textureLoader.load("/textures/bed_cover.webp")
-                    bedCover.flipY = false
-                    bedCover.colorSpace = THREE.SRGBColorSpace
                     child.material = new THREE.MeshBasicMaterial({map: bedCover})
                     child.material.needsUpdate = true
                 }
