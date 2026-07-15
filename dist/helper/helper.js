@@ -131,22 +131,3 @@ export function getProjectedBounds(mesh, camera, width, height) {
     }
 }
 
-/**
- * Ensure the object has the necessary user data for the hover effect
- * @param {THREE.Object3D} child
- * @returns {void}
- */
-export function ensureHoverUserData(child) {
-    if (!child.userData.initialScale) {
-        child.userData.initialScale = new THREE.Vector3().copy(child.scale)
-    }
-    if (!child.userData.initialPosition) {
-        child.userData.initialPosition = new THREE.Vector3().copy(child.position)
-    }
-    if (!child.userData.initialRotation) {
-        child.userData.initialRotation = new THREE.Euler().copy(child.rotation)
-    }
-    if (child.userData.isAnimating === undefined) {
-        child.userData.isAnimating = false
-    }
-}

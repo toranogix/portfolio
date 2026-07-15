@@ -8,20 +8,22 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="./style.css">
+  <script type="module" crossorigin src="/assets/index-BTvx5X4a.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-UYToua82.css">
 </head>
 <body>
     <div id="splash" class="splash">
+        <canvas id="splash-lottie-bg" class="splash__lottie splash__lottie--bg" aria-hidden="true"></canvas>
+        <canvas id="splash-lottie-music" class="splash__lottie splash__lottie--music" aria-hidden="true"></canvas>
+
         <div class="splash__card">
-            <p class="splash__title" data-text="Roomangix Portfolio Showcase 2025">
-                <span class="splash__title-text" aria-hidden="true"></span>
-                <span class="visually-hidden">Roomangix Portfolio Showcase 2025</span>
-            </p>
-            <p class="splash__subtitle">
-                <span class="splash__subtitle-text" aria-hidden="true"></span>
-                <span class="visually-hidden">Click start to begin</span>
-            </p>
-            <button id="splash-enter" type="button" class="splash__start">START</button>
+            <canvas id="splash-lottie-hero" class="splash__lottie splash__lottie--hero" aria-hidden="true"></canvas>
+            <p class="splash__title">Roomangix Portfolio Showcase 2025</p>
+            <p class="splash__subtitle">Click start to begin</p>
+            <div class="splash__start-wrap">
+                <canvas id="splash-lottie-click" class="splash__lottie splash__lottie--click" aria-hidden="true"></canvas>
+                <button id="splash-enter" type="button" class="splash__start">START</button>
+            </div>
         </div>
         <div class="splash__footer">
             <button id="splash-enter-silent" type="button" class="splash__silent">enter without sound :(</button>
@@ -49,34 +51,7 @@
         </svg>
     </button>
 
-    <div
-        id="passion-panel-backdrop"
-        class="passion-panel-backdrop"
-        aria-hidden="true"
-    ></div>
-    <aside
-        id="passion-panel"
-        class="passion-panel"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="passion-panel-title"
-        aria-hidden="true"
-    >
-        <button
-            id="passion-panel-close"
-            type="button"
-            class="passion-panel__close"
-            aria-label="Close"
-        >
-            ×
-        </button>
-        <p class="passion-panel__label">Passion</p>
-        <h2 id="passion-panel-title" class="passion-panel__title"></h2>
-        <p id="passion-panel-body" class="passion-panel__body"></p>
-    </aside>
-
     <canvas class="webgl"></canvas>
-    <script type="module" src="./script.js"></script>
 
 </body>
 

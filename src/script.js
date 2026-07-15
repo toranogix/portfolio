@@ -3,9 +3,13 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
-import {texturesPaths, cameraPosition, cameraTarget, socialLinks, params} from '../public/constants/constants.js'
+import {texturesPaths, cameraPosition, cameraTarget, socialLinks, passionInfo, params} from '../public/constants/constants.js'
 import gui from '../public/debug/debug.js'
-import {hoverEffect, loadVideoTexture} from '../public/helper/helper.js'
+import { createAudioManager } from '../public/audio/audioManager.js'
+import { initMusicButton } from '../public/audio/musicButton.js'
+import { initSplash } from '../public/splash/splash.js'
+import { initPassionPanel } from '../public/passion/passionPanel.js'
+import {hoverEffect, loadVideoTexture, ensureHoverUserData} from '../public/helper/helper.js'
 import smokeVertexShader from "../public/shaders/smoke/vertex.glsl?raw";
 import smokeFragmentShader from "../public/shaders/smoke/fragment.glsl?raw";
 import { time } from 'three/tsl';
@@ -35,7 +39,36 @@ const scene = new THREE.Scene()
 const camera = new THREE.PerspectiveCamera(35, params.aspect, 0.1, 100)
 camera.position.set(cameraPosition.x, cameraPosition.y, cameraPosition.z)
 scene.add(camera)
-const state = gui(camera, scene)
+const audioManager = createAudioManager(camera, scene)
+const musicButton = initMusicButton(audioManager)
+const passionPanel = initPassionPanel()
+const state = gui(audioManager, () => musicButton?.sync())
+const passionKeys = Object.keys(passionInfo)
+
+function getPassionEntry(objectName) {
+    const key = passionKeys.find((passionKey) => objectName.includes(passionKey))
+    return key ? passionInfo[key] : null
+}
+
+function isPassionObject(objectName) {
+    return passionKeys.some((passionKey) => objectName.includes(passionKey))
+}
+
+/** Clickable passion props that should not scale on hover. */
+function skipsHoverEffect(objectName) {
+    return objectName.includes('gis_letter')
+        || objectName.includes('lis')
+        || objectName.includes('earth_globe')
+        || objectName.includes('naruto_headband')
+        || objectName.includes('threejs')
+}
+
+// init splash screen
+initSplash(async (withSound) => {
+    musicButton?.show()
+    if (withSound) await audioManager.play()
+    musicButton?.sync()
+})
 
 /* lights*/
 const ambientLight = new THREE.AmbientLight(0xffffff, 6);
@@ -70,16 +103,22 @@ window.addEventListener('touchmove', (event) => {
 window.addEventListener('click', () => {
     if(currentIntersects && currentIntersects.length > 0){
         const object = currentIntersects[0].object
-        Object.entries(socialLinks).forEach(([key, url]) => {
-            if(object.name.includes(key)){
+
+        for (const [key, url] of Object.entries(socialLinks)) {
+            if (object.name.includes(key)) {
                 const newWindow = window.open()
                 newWindow.opener = null
                 newWindow.location = url
                 newWindow.target = "_blank"
                 newWindow.rel = "noopener noreferrer"
-
+                return
             }
-        })
+        }
+
+        const passion = getPassionEntry(object.name)
+        if (passion) {
+            passionPanel.open(passion)
+        }
     }
 })
 
@@ -89,7 +128,7 @@ const controls = new OrbitControls(camera, canvas)
 controls.enableDamping = true
 controls.enablePan = false;
 controls.minDistance = 3;
-controls.maxDistance = 10;
+controls.maxDistance = 5;
 controls.minAzimuthAngle = Math.PI * 0.5;
 controls.maxAzimuthAngle = - Math.PI;
 controls.minPolarAngle = Math.PI * 0.2;
@@ -126,8 +165,11 @@ loader.load("/model/room_portfolio.glb", (glb) => {
                 }
                 });
 
-                // list objects to intersect
-                if(child.name.includes("target")){
+                // list objects to intersect (targets + passion props)
+                if (child.name.includes("target") || isPassionObject(child.name)) {
+                    if (!skipsHoverEffect(child.name)) {
+                        ensureHoverUserData(child)
+                    }
                     objectsToIntersect.push(child)
                 }
                 // list letters to animate
@@ -137,10 +179,7 @@ loader.load("/model/room_portfolio.glb", (glb) => {
                 }
                 if(child.name.includes("hover") || child.name.includes("wall") || child.name.includes("target")
                     || child.name.includes("paper")){
-                    child.userData.initialScale = new THREE.Vector3().copy(child.scale)
-                    child.userData.initialPosition = new THREE.Vector3().copy(child.position)
-                    child.userData.initialRotation = new THREE.Vector3().copy(child.rotation)
-                    child.userData.isAnimating = false
+                    ensureHoverUserData(child)
                 }
                 
                 if(child.name.includes("bed_cover")){
@@ -246,8 +285,6 @@ const smoke = new THREE.Mesh(smokeGeometry, smokeMaterial)
 smoke.position.set(-0.119, 1.90, 0.01)
 scene.add(smoke)
 
-
-
 const clock = new THREE.Clock()
 
 /* animate*/
@@ -299,20 +336,27 @@ function animate(timestamps) {
     currentIntersects = raycaster.intersectObjects(objectsToIntersect)
     if(currentIntersects && currentIntersects.length > 0){
 
-        // hover effect for the intersected object
         const currentIntersectedObject = currentIntersects[0].object
+        const isClickable =
+            Object.keys(socialLinks).some((key) => currentIntersectedObject.name.includes(key))
+            || isPassionObject(currentIntersectedObject.name)
+        canvas.style.cursor = isClickable ? 'pointer' : 'default'
+
         if(currentIntersectedObject !== currentHoveredObject){
-            if(currentHoveredObject){
+            if (currentHoveredObject && !skipsHoverEffect(currentHoveredObject.name)) {
                 hoverEffect(currentHoveredObject, false, 1, smoke)
             }
             currentHoveredObject = currentIntersectedObject
-            hoverEffect(currentHoveredObject, true, 1.3, smoke)
+            if (!skipsHoverEffect(currentHoveredObject.name)) {
+                hoverEffect(currentHoveredObject, true, 1.3, smoke)
+            }
         }
     } else {
-        if(currentHoveredObject){
+        canvas.style.cursor = 'default'
+        if (currentHoveredObject && !skipsHoverEffect(currentHoveredObject.name)) {
             hoverEffect(currentHoveredObject, false, 1, smoke)
-            currentHoveredObject = null
         }
+        currentHoveredObject = null
     }
         renderer.render(scene, camera)
     }
