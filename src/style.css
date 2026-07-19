@@ -64,7 +64,6 @@ body
     gap: 0.55rem;
     padding: 2.5rem 3rem;
     border: 10px solid transparent;
-    border-radius: 0.5rem;
     max-width: min(92vw, 36rem);
     background:
         linear-gradient(var(--room-shadow), var(--room-shadow)) padding-box,
