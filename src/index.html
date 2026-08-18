@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="preload" href="/model/room_portfolio.glb" as="fetch" crossorigin="anonymous">
     <link rel="stylesheet" href="./style.css">
 </head>
 <body>
@@ -21,6 +22,12 @@
                 <span class="splash__subtitle-text" aria-hidden="true"></span>
                 <span class="visually-hidden">Click start to begin</span>
             </p>
+            <div class="splash__progress" id="splash-progress" aria-hidden="true">
+                <div class="splash__progress-bar-track">
+                    <div class="splash__progress-bar" id="splash-progress-bar"></div>
+                </div>
+                <span class="splash__progress-label" id="splash-progress-label">Loading…</span>
+            </div>
             <button id="splash-enter" type="button" class="splash__start">START</button>
         </div>
         <div class="splash__footer">

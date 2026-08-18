@@ -63,8 +63,9 @@ function skipsHoverEffect(objectName) {
         || objectName.includes('threejs')
 }
 
-// init splash screen
+// init splash screen — wait for all assets before revealing the scene
 initSplash(async (withSound) => {
+    await assetsReadyPromise;
     musicButton?.show()
     if (withSound) await audioManager.play()
     musicButton?.sync()
@@ -139,7 +140,26 @@ controls.target.set(cameraTarget.x, cameraTarget.y, cameraTarget.z)
 const dracoLoader = new DRACOLoader()
 dracoLoader.setDecoderPath('/draco/')
 dracoLoader.preload()
-const textureLoader = new THREE.TextureLoader();
+
+let onAssetsReady = null;
+const assetsReadyPromise = new Promise((resolve) => { onAssetsReady = resolve; });
+
+const progressBar = document.getElementById('splash-progress-bar');
+const progressLabel = document.getElementById('splash-progress-label');
+
+const loadingManager = new THREE.LoadingManager();
+loadingManager.onProgress = (_url, loaded, total) => {
+    const pct = Math.round((loaded / total) * 100);
+    if (progressBar) progressBar.style.width = `${pct}%`;
+    if (progressLabel) progressLabel.textContent = `Loading… ${pct}%`;
+};
+loadingManager.onLoad = () => {
+    if (progressBar) progressBar.style.width = '100%';
+    // if (progressLabel) progressLabel.textContent = 'Ready!';
+    onAssetsReady();
+};
+
+const textureLoader = new THREE.TextureLoader(loadingManager);
 Object.entries(texturesPaths).forEach(([key, path]) => {
     textureLoader.load(path, (texture) => {
         texture.flipY = false;
@@ -152,7 +172,7 @@ const bedCover = textureLoader.load("/textures/bed_cover.webp")
 bedCover.flipY = false
 bedCover.colorSpace = THREE.SRGBColorSpace
 
-const loader = new GLTFLoader();
+const loader = new GLTFLoader(loadingManager);
 loader.setDRACOLoader(dracoLoader);
 loader.load("/model/room_portfolio.glb", (glb) => {
     glb.scene.traverse((child) => {

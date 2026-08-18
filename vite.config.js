@@ -1,7 +1,12 @@
 import { defineConfig } from 'vite';
+import { compression } from 'vite-plugin-compression2';
 
 export default defineConfig({
+  plugins: [
+    compression({ algorithm: 'brotliCompress', exclude: [/\.(webp|mp4|mp3|png)$/] }),
+  ],
   root: 'src/',
+
   publicDir:'../public/',
   server:
   {

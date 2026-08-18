@@ -91,8 +91,8 @@ export const passionInfo = {
     malenia_target_hover: {
         title: "Elden Ring & Souls",
         description:
-            "Malenia. Blade of Miquella (one of the best bosses ever !!!). FromSoftware games taught me to love difficulty and patience. " +
-            "You have to learn, adapt and earn every victory. Pure, unforgettable gameplay (after a lot of hours).",
+            "Malenia, Blade of Miquella (one of the best bosses ever !!!). FromSoftware games taught me to love difficulty and patience. " +
+            "You have to learn, adapt and earn every victory. Pure unforgettable gameplay (after a lot of hours).",
     },
     luv_sic_target_paper: {
         title: "Luv(sic) · Nujabes",
