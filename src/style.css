@@ -26,9 +26,37 @@ body
 .webgl
 {
     position: fixed;
-    top: 0;
-    left: 0;
+    inset: 0;
+    z-index: 1;
     outline: none;
+}
+
+/* Live iframe on the desktop screen */
+.css3d
+{
+    position: fixed;
+    inset: 0;
+    z-index: 2;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.css3d iframe
+{
+    border: 0;
+    background: #0a0a0a;
+    pointer-events: none;
+}
+
+/* Redraws the chair above the iframe so it occludes the screen */
+.webgl-occluder
+{
+    position: fixed;
+    inset: 0;
+    z-index: 3;
+    outline: none;
+    pointer-events: none;
+    background: transparent;
 }
 
 /* Splash screen */
