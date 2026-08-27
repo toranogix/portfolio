@@ -120,7 +120,7 @@ export const passionInfo = {
     rubicks_target_hover: {
         title: "Rubik’s Cube",
         description:
-            "Twisting a cube until the colors snap into place scratches a special itch. That small dopamine hit when the last face solves is just pure puzzle joy (it's not easy but it's worth it).",
+            "Twisting a cube until the colors snap into place scratches a special itch. That small dopamine hit when the last face solves is just pure puzzle joy (it's not easy but it's worth it). Love both 3x3 and 4x4 cubes.",
         image: "/images/cubes.jpg",
     },
     gis_letter: {
