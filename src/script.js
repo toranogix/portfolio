@@ -10,7 +10,7 @@ import { createAudioManager } from '../public/audio/audioManager.js'
 import { initMusicButton } from '../public/audio/musicButton.js'
 import { initSplash } from '../public/splash/splash.js'
 import { initPassionPanel } from '../public/passion/passionPanel.js'
-import {hoverEffect, loadVideoTexture, ensureHoverUserData} from '../public/helper/helper.js'
+import {hoverEffect, loadVideoTexture, playVideoTexture, applyPlanarScreenUVs, ensureHoverUserData} from '../public/helper/helper.js'
 import smokeVertexShader from "../public/shaders/smoke/vertex.glsl?raw";
 import smokeFragmentShader from "../public/shaders/smoke/fragment.glsl?raw";
 import { time } from 'three/tsl';
@@ -27,6 +27,7 @@ let gamingChairTop = null
 let vinylDisk = null
 const gisLetterAnim = { peak: 0.2, periodSec: 3.5, staggerSec: 0.35 }
 let ball = null
+const occluderDepthMeshes = []
 
 const DESKTOP_IFRAME_WIDTH = 1280
 const DESKTOP_IFRAME_HEIGHT = 720
@@ -47,7 +48,7 @@ const savedControlsLimits = {
 }
 
 // load video and display to screen mac
-const macScreenVideoTexture = loadVideoTexture(params.videoTexturePath, 0, 0);
+const macScreenVideoTexture = loadVideoTexture(params.videoTexturePath);
 
 /* scene*/
 const canvas = document.querySelector('canvas.webgl')
@@ -87,9 +88,10 @@ function isDesktopHitbox(object) {
     return Boolean(object?.userData?.isDesktopHitbox)
 }
 
-// init splash screen, wait for all assets before revealing the scene
+// init splash screen
 initSplash(async (withSound) => {
     await assetsReadyPromise;
+    playVideoTexture(macScreenVideoTexture)
     musicButton?.show()
     if (withSound) await audioManager.play()
     musicButton?.sync()
@@ -97,13 +99,12 @@ initSplash(async (withSound) => {
 
 /* lights*/
 const ambientLight = new THREE.AmbientLight(0xffffff, 6);
-// layer 0 = room, layer 1 = occluder pass (chair over the iframe)
 ambientLight.layers.enable(1)
 scene.add(ambientLight);
 
 
 /* renderers
- * Layer stack: WebGL room → CSS3D iframe on screen → WebGL occluder (chair only)
+ * Layer stack: WebGL room → CSS3D iframe on screen → WebGL occluder
  */
 const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true })
 renderer.setSize(params.width, params.height)
@@ -221,6 +222,10 @@ function mountDesktopCss3D(mesh) {
     }
 }
 
+/**
+ * Apply controls limits to the camera.
+ * @param {*} limits 
+ */
 function applyControlsLimits(limits) {
     controls.minDistance = limits.minDistance
     controls.maxDistance = limits.maxDistance
@@ -230,6 +235,10 @@ function applyControlsLimits(limits) {
     controls.maxPolarAngle = limits.maxPolarAngle
 }
 
+
+/**
+ * Focus the desktop screen.
+ */
 function focusDesktopScreen() {
     if (!desktopFocus || isCameraAnimating) return
     if (isDesktopFocused) {
@@ -274,6 +283,9 @@ function focusDesktopScreen() {
     })
 }
 
+/**
+ * Exit the desktop focus.
+ */
 function exitDesktopFocus() {
     if (!isDesktopFocused || isCameraAnimating) return
 
@@ -327,10 +339,13 @@ const touch = new THREE.Vector2()
 window.addEventListener('mousemove', (event) => {
     mouse.x = event.clientX / params.width * 2 - 1,
     mouse.y = - (event.clientY / params.height) * 2 + 1
+    if(currentIntersects && currentIntersects.length > 0){
+        const object = currentIntersects[0].object
 
-    if (isDesktopHitbox(currentIntersects[0].object)) {
-        focusDesktopScreen()
-        return
+        if (isDesktopHitbox(object)) {
+            focusDesktopScreen()
+            return
+        }
     }
 })
 window.addEventListener('touchmove', (event) => {
@@ -457,10 +472,25 @@ loader.load("/model/room_portfolio.glb", (glb) => {
                     gamingChairTop = child
                     child.userData.initialRotation = new THREE.Euler().copy(child.rotation);
                 }
-                // Chair is the only mesh redrawn above the CSS iframe
-                if (child.name.includes("gaming_chair")) {
+                if (child.name.includes("gaming_chair") || child.name.includes("mac")) {
                     child.layers.enable(1)
+                    child.renderOrder = child.name.includes("mac") ? 2 : 1
+                } else if (!child.name.toLowerCase().includes("background")) {
+                    child.layers.enable(1)
+                    child.renderOrder = 0
+                    occluderDepthMeshes.push(child)
                 }
+
+                if (child.name.includes("mac_screen")){
+                    applyPlanarScreenUVs(child)
+                    const videoMaterial = new THREE.MeshBasicMaterial({
+                        map: macScreenVideoTexture,
+                        toneMapped: false,
+                    })
+                    child.material = videoMaterial
+                    child.material.needsUpdate = true
+                }
+    
                 if(child.name.includes("vinyl_disk")){
                     vinylDisk = child
                     child.userData.initialPosition = new THREE.Euler().copy(child.position);
@@ -498,12 +528,6 @@ loader.load("/model/room_portfolio.glb", (glb) => {
                     child.material = new THREE.MeshBasicMaterial({ color: 0x0a0a0a })
                     child.userData.isDesktopScreen = true
                 }
-                if (child.name.includes("mac_screen")){
-                    const videoMaterial = new THREE.MeshBasicMaterial({
-                        map: macScreenVideoTexture
-                    })
-                    child.material = videoMaterial;
-                }
             }
         });
         glb.scene.scale.setScalar(0.08)
@@ -517,8 +541,7 @@ loader.load("/model/room_portfolio.glb", (glb) => {
             }
         })
 
-        // calculate the limit of the camera using the bounding box of the scene
-        // without the background   
+        // calculate the limit of the camera using the bounding box of the scene without the background   
         const bbox = new THREE.Box3().makeEmpty();
         glb.scene.traverse((obj) => {
             if (!obj.isMesh) return;
@@ -638,10 +661,21 @@ function animate(timestamps) {
         renderer.render(scene, camera)
         cssRenderer.render(cssScene, camera)
 
-        // Chair above the iframe
+        for (const mesh of occluderDepthMeshes) {
+            const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
+            for (const mat of mats) {
+                if (mat) mat.colorWrite = false
+            }
+        }
         camera.layers.set(1)
         occluderRenderer.render(scene, camera)
         camera.layers.set(0)
+        for (const mesh of occluderDepthMeshes) {
+            const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
+            for (const mat of mats) {
+                if (mat) mat.colorWrite = true
+            }
+        }
     }
 
 animate()

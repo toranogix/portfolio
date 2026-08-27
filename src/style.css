@@ -48,7 +48,7 @@ body
     pointer-events: none;
 }
 
-/* Redraws the chair above the iframe so it occludes the screen */
+/* Redraws the chair and Mac above the iframe so they occlude the screen */
 .webgl-occluder
 {
     position: fixed;
@@ -622,6 +622,42 @@ body
     color: rgba(255, 179, 243, 0.82);
 }
 
+.passion-panel__media
+{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    border-radius: 0.65rem;
+    overflow: hidden;
+    border: 1px solid rgba(255, 179, 243, 0.35);
+    background: rgba(18, 8, 16, 0.55);
+    box-shadow: 0 0 18px rgba(224, 64, 251, 0.12);
+}
+
+.passion-panel__image,
+.passion-panel__video
+{
+    display: block;
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: 20rem;
+    object-fit: contain;
+}
+
+.passion-panel__image[hidden],
+.passion-panel__video[hidden],
+.passion-panel__media[hidden]
+{
+    display: none;
+}
+
+.passion-panel__video
+{
+    background: #0a0a0a;
+}
+
 @media (max-width: 768px)
 {
     .passion-panel
@@ -644,5 +680,11 @@ body
     .passion-panel--open
     {
         transform: translateY(0);
+    }
+
+    .passion-panel__image,
+    .passion-panel__video
+    {
+        max-height: 12rem;
     }
 }

@@ -76,23 +76,76 @@ export function hoverEffect(object, isHovering, scale, smoke){
 /**
  * Load a video texture
  * @param {string} path - the path to the video texture
- * @param {number} offSetX - the offset of the video texture on the x axis
- * @param {number} offSetY - the offset of the video texture on the y axis
+ * @param {number} [offSetX=0] - the offset of the video texture on the x axis
+ * @param {number} [offSetY=0] - the offset of the video texture on the y axis
  * @returns {THREE.VideoTexture}
  */
-export function loadVideoTexture(path, offSetX, offSetY){
+export function loadVideoTexture(path, offSetX = 0, offSetY = 0){
     const video = document.createElement('video')
     video.src = path
+    video.crossOrigin = 'anonymous'
     video.loop = true
     video.muted = true
     video.playsInline = true
     video.autoplay = true
-    video.play()
+    video.preload = 'auto'
+    video.setAttribute('playsinline', '')
+    video.play().catch(() => {})
+
     const videoTexture = new THREE.VideoTexture(video)
-    videoTexture.flipY = true
-    videoTexture.colorSpace = THREE.SRGBColorSpace;
+    videoTexture.colorSpace = THREE.SRGBColorSpace
+    videoTexture.flipY = false
+    videoTexture.minFilter = THREE.LinearFilter
+    videoTexture.magFilter = THREE.LinearFilter
+    videoTexture.generateMipmaps = false
     videoTexture.offset.set(offSetX, offSetY)
     return videoTexture
+}
+
+/**
+ * Start playback on a VideoTexture (call after a user gesture).
+ * @param {THREE.VideoTexture} texture
+ */
+export function playVideoTexture(texture) {
+    const video = texture?.image
+    if (video && typeof video.play === 'function') {
+        video.play().catch(() => {})
+    }
+}
+
+/**
+ * Rebuild UVs so a planar screen mesh maps a video across its full face.
+ * @param {THREE.Mesh} mesh
+ */
+export function applyPlanarScreenUVs(mesh) {
+    const geometry = mesh.geometry
+    const position = geometry?.attributes?.position
+    if (!position) return
+
+    let minX = Infinity
+    let maxX = -Infinity
+    let minY = Infinity
+    let maxY = -Infinity
+
+    for (let i = 0; i < position.count; i++) {
+        const x = position.getX(i)
+        const y = position.getY(i)
+        if (x < minX) minX = x
+        if (x > maxX) maxX = x
+        if (y < minY) minY = y
+        if (y > maxY) maxY = y
+    }
+
+    const spanX = maxX - minX || 1
+    const spanY = maxY - minY || 1
+    const uv = new Float32Array(position.count * 2)
+
+    for (let i = 0; i < position.count; i++) {
+        uv[i * 2] = (position.getX(i) - minX) / spanX
+        uv[i * 2 + 1] = (maxY - position.getY(i)) / spanY
+    }
+
+    geometry.setAttribute('uv', new THREE.BufferAttribute(uv, 2))
 }
 
 /**

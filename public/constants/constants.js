@@ -4,7 +4,7 @@ export const params = {
     height: window.innerHeight,
     width: window.innerWidth,
     aspect: window.innerWidth / window.innerHeight,
-    videoTexturePath: "/video/game.mp4"
+    videoTexturePath: "/video/wallpaper-mac.mp4"
 }
 
 export const cameraPosition = {
@@ -69,64 +69,76 @@ export const passionInfo = {
         description:
             "Chess is one of my favorite ways to think quietly and to relax. I love the tension of a long game (not always but most of the time). " + 
             "Reading the board, sacrificing pieces and finding that one move that flips everything is what makes it so addictive and enjoyable. " +
-            "Not playing with an official chess account but I'm getting there soon (^ ^)."
+            "Not playing with an official chess account but I'm getting there soon (^ ^).",
+        image: "",
     },
     earth_globe: {
         title: "Maps",
         description:
             "I love MAPS. And I’m endlessly curious about the world: cultures and cities I’ve never seen. I would have love to live at the time of the great explorers to discover new places that were not yet discovered. " +
             "This globe is a reminder that there’s always another place to learn about, another story across the globe.",
+        image: "images/globe.jpg",
     },
     naruto_headband: {
         title: "Naruto & Anime",
         description:
             "Naruto was more than a show for me (it's the best anime ever no doubt about it). It was motivation wrapped in friendship and stubborn hope and optimism. " +
             "Anime still shapes how I think about characters, worlds and storytelling.",
+        image: "",
     },
     jin_sakai_target_hover: {
         title: "Ghost of Tsushima",
         description:
             " Honor died on the beach - Jin Sakai. It's undoubtely one of the best games ever made. Jin Sakai’s journey stuck with me with its beauty and storytelling about: How far are you willing to go to protect your people and land in times of conflict ?. Ghost of Tsushima is one of those games that feels like cinema.",
+        image: "",
     },
     malenia_target_hover: {
         title: "Elden Ring & Souls",
         description:
             "Malenia, Blade of Miquella (one of the best bosses ever !!!). FromSoftware games taught me to love difficulty and patience. " +
             "You have to learn, adapt and earn every victory. Pure unforgettable gameplay (after a lot of hours).",
+        image: "",
     },
     luv_sic_target_paper: {
         title: "Luv(sic) · Nujabes",
         description:
             "Nujabes’ Luv(sic) is on loop in my head more often than I’d admit. That blend of jazz, hip-hop and quiet emotion is the soundtrack of late nights and deep focus.",
+        image: "/textures/luv.webp",
     },
     vagabond_target_paper: {
         title: "Vagabond",
         description:
             "Vagabond isn’t just a manga, it’s a meditation on mastery of your own self. The art, the silence between panels, Musashi’s path… all wrapped up in a beautiful story.",
+        image: "/textures/vagabond.webp",
     },
     modal_soul_target_paper: {
         title: "Modal Soul",
         description:
-            "Modal Soul is one of those albums that feels like a place. Smooth, reflective, imperfectly perfect. Nujabes at his most immersive. Music for coding, creating, and zoning out.",
+            "Modal Soul is one of those albums that feels like a place. Smooth, reflective and perfect. Nujabes at his most immersive. Music for coding, creating, and zoning out.",
+        image: "/textures/soul.webp",
     },
     rubicks_target_hover: {
         title: "Rubik’s Cube",
         description:
             "Twisting a cube until the colors snap into place scratches a special itch. That small dopamine hit when the last face solves is just pure puzzle joy (it's not easy but it's worth it).",
+        image: "/images/cubes.jpg",
     },
     gis_letter: {
         title: "GIS",
         description:
             "Geographic Information Systems fascinate me. Turning raw spatial data into maps that tell a story. It’s where geography, code and visualization meet (love it !!! I'm a GIS specialist).",
+        image: "",
     },
     lis: {
         title: "Life is Strange",
         description:
             "One of the best games ever made. Life is Strange hits hard with atmosphere and those quiet teenage moments that stick. It’s the kind of story-driven game that stays with you long after the credits (RIP Chloe Price). The soundtrack is also one of the best ever made (and you're listening to it right now).",
+        image: "",
     },
     threejs: {
         title: "Three.js",
         description:
             "Three.js is a JavaScript library that allows you to create 3D graphics in the browser. I used it to create this portfolio website (love it !!!).",
-    },
+        image: "",
+    }, 
 }
