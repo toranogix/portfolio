@@ -10,7 +10,7 @@ import { createAudioManager } from '../public/audio/audioManager.js'
 import { initMusicButton } from '../public/audio/musicButton.js'
 import { initSplash } from '../public/splash/splash.js'
 import { initPassionPanel } from '../public/passion/passionPanel.js'
-import {hoverEffect, loadVideoTexture, playVideoTexture, applyPlanarScreenUVs, ensureHoverUserData} from '../public/helper/helper.js'
+import {hoverEffect, loadVideoTexture, playVideoTexture, applyPlanarScreenUVs} from '../public/helper/helper.js'
 import smokeVertexShader from "../public/shaders/smoke/vertex.glsl?raw";
 import smokeFragmentShader from "../public/shaders/smoke/fragment.glsl?raw";
 import { time } from 'three/tsl';
@@ -40,7 +40,7 @@ let isCameraAnimating = false
 
 const savedControlsLimits = {
     minDistance: 3,
-    maxDistance: 4,
+    maxDistance: 8,
     minAzimuthAngle: Math.PI * 0.5,
     maxAzimuthAngle: -Math.PI,
     minPolarAngle: Math.PI * 0.2,
@@ -74,20 +74,6 @@ function isPassionObject(objectName) {
     return passionKeys.some((passionKey) => objectName.includes(passionKey))
 }
 
-/** Clickable passion props that should not scale on hover. */
-function skipsHoverEffect(objectName) {
-    return objectName.includes('gis_letter')
-        || objectName.includes('lis')
-        || objectName.includes('earth_globe')
-        || objectName.includes('naruto_headband')
-        || objectName.includes('threejs')
-        || objectName.includes('desktop_screen_hitbox')
-}
-
-function isDesktopHitbox(object) {
-    return Boolean(object?.userData?.isDesktopHitbox)
-}
-
 // init splash screen
 initSplash(async (withSound) => {
     await assetsReadyPromise;
@@ -96,6 +82,7 @@ initSplash(async (withSound) => {
     if (withSound) await audioManager.play()
     musicButton?.sync()
 })
+
 
 /* lights*/
 const ambientLight = new THREE.AmbientLight(0xffffff, 6);
@@ -123,200 +110,7 @@ occluderRenderer.setClearColor(0x000000, 0)
 occluderRenderer.setSize(params.width, params.height)
 occluderRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
-/**
- * Place a live iframe on the desktop_screen mesh via CSS3D .
- * @param {THREE.Mesh} mesh
- */
-function mountDesktopCss3D(mesh) {
-    desktopScreenMesh = mesh
 
-    const iframe = document.createElement('iframe')
-    iframe.src = desktopUrl
-    iframe.title = 'Roomangix OS'
-    iframe.loading = 'lazy'
-    iframe.referrerPolicy = 'no-referrer'
-    iframe.setAttribute('aria-hidden', 'true')
-    iframe.tabIndex = -1
-    iframe.style.width = `${DESKTOP_IFRAME_WIDTH}px`
-    iframe.style.height = `${DESKTOP_IFRAME_HEIGHT}px`
-
-    const cssObject = new CSS3DObject(iframe)
-
-    mesh.updateWorldMatrix(true, false)
-    mesh.geometry.computeBoundingBox()
-    const bb = mesh.geometry.boundingBox
-    const localSize = bb.getSize(new THREE.Vector3())
-    const localCenter = bb.getCenter(new THREE.Vector3())
-    const worldScale = mesh.getWorldScale(new THREE.Vector3())
-    const size = localSize.clone().multiply(worldScale)
-
-    const axes = [
-        { axis: 'x', value: size.x },
-        { axis: 'y', value: size.y },
-        { axis: 'z', value: size.z },
-    ].sort((a, b) => a.value - b.value)
-    const depth = axes[0]
-
-    const center = localCenter.clone()
-    mesh.localToWorld(center)
-
-    const worldQuat = mesh.getWorldQuaternion(new THREE.Quaternion())
-    cssObject.quaternion.copy(worldQuat)
-    cssObject.position.copy(center)
-
-    let screenW
-    let screenH
-    if (depth.axis === 'z') {
-        screenW = size.x
-        screenH = size.y
-    } else if (depth.axis === 'x') {
-        cssObject.rotateY(Math.PI / 2)
-        screenW = size.z
-        screenH = size.y
-    } else {
-        cssObject.rotateX(-Math.PI / 2)
-        screenW = size.x
-        screenH = size.z
-    }
-
-    cssObject.scale.set(screenW / DESKTOP_IFRAME_WIDTH, screenH / DESKTOP_IFRAME_HEIGHT, 1)
-
-    // Sit on the front face (toward camera)
-    const depthDir = new THREE.Vector3(
-        depth.axis === 'x' ? 1 : 0,
-        depth.axis === 'y' ? 1 : 0,
-        depth.axis === 'z' ? 1 : 0,
-    ).applyQuaternion(worldQuat)
-    if (depthDir.dot(camera.position.clone().sub(center)) < 0) {
-        depthDir.negate()
-    }
-    cssObject.position.addScaledVector(depthDir, depth.value * 0.5 + 0.002)
-
-    // Keep a dark panel under the iframe
-    mesh.material = new THREE.MeshBasicMaterial({ color: 0x0a0a0a })
-
-    cssScene.add(cssObject)
-
-    // Invisible hitbox for raycast / click → camera zoom
-    desktopHitbox = new THREE.Mesh(
-        new THREE.PlaneGeometry(screenW * 1.5, screenH * 1.5),
-        new THREE.MeshBasicMaterial({
-            transparent: true,
-            opacity: 0,
-            depthWrite: false,
-            side: THREE.DoubleSide,
-        }),
-    )
-    desktopHitbox.name = 'desktop_screen_hitbox'
-    desktopHitbox.userData.isDesktopHitbox = true
-    desktopHitbox.position.copy(cssObject.position)
-    desktopHitbox.quaternion.copy(cssObject.quaternion)
-    desktopHitbox.position.addScaledVector(depthDir, 0.01)
-    scene.add(desktopHitbox)
-    objectsToIntersect.push(desktopHitbox)
-
-    desktopFocus = {
-        target: cssObject.position.clone(),
-        normal: depthDir.clone(),
-        cameraPos: cssObject.position.clone().addScaledVector(depthDir, DESKTOP_FOCUS_DISTANCE),
-    }
-}
-
-/**
- * Apply controls limits to the camera.
- * @param {*} limits 
- */
-function applyControlsLimits(limits) {
-    controls.minDistance = limits.minDistance
-    controls.maxDistance = limits.maxDistance
-    controls.minAzimuthAngle = limits.minAzimuthAngle
-    controls.maxAzimuthAngle = limits.maxAzimuthAngle
-    controls.minPolarAngle = limits.minPolarAngle
-    controls.maxPolarAngle = limits.maxPolarAngle
-}
-
-
-/**
- * Focus the desktop screen.
- */
-function focusDesktopScreen() {
-    if (!desktopFocus || isCameraAnimating) return
-    if (isDesktopFocused) {
-        exitDesktopFocus()
-        return
-    }
-
-    isCameraAnimating = true
-    isDesktopFocused = true
-    controls.enabled = false
-    applyControlsLimits({
-        minDistance: 0.45,
-        maxDistance: 4,
-        minAzimuthAngle: -Infinity,
-        maxAzimuthAngle: Infinity,
-        minPolarAngle: 0.05,
-        maxPolarAngle: Math.PI - 0.05,
-    })
-
-    gsap.killTweensOf(camera.position)
-    gsap.killTweensOf(controls.target)
-
-    gsap.to(camera.position, {
-        x: desktopFocus.cameraPos.x,
-        y: desktopFocus.cameraPos.y,
-        z: desktopFocus.cameraPos.z,
-        duration: 1.5,
-        ease: 'power2.inOut',
-    })
-    gsap.to(controls.target, {
-        x: desktopFocus.target.x,
-        y: desktopFocus.target.y,
-        z: desktopFocus.target.z,
-        duration: 1.5,
-        ease: 'power2.inOut',
-        onUpdate: () => controls.update(),
-        onComplete: () => {
-            isCameraAnimating = false
-            controls.enabled = true
-            controls.update()
-        },
-    })
-}
-
-/**
- * Exit the desktop focus.
- */
-function exitDesktopFocus() {
-    if (!isDesktopFocused || isCameraAnimating) return
-
-    isCameraAnimating = true
-    controls.enabled = false
-    gsap.killTweensOf(camera.position)
-    gsap.killTweensOf(controls.target)
-
-    gsap.to(camera.position, {
-        x: cameraPosition.x,
-        y: cameraPosition.y,
-        z: cameraPosition.z,
-        duration: 1.5,
-        ease: 'power2.inOut',
-    })
-    gsap.to(controls.target, {
-        x: cameraTarget.x,
-        y: cameraTarget.y,
-        z: cameraTarget.z,
-        duration: 1.5,
-        ease: 'power2.inOut',
-        onUpdate: () => controls.update(),
-        onComplete: () => {
-            applyControlsLimits(savedControlsLimits)
-            isDesktopFocused = false
-            isCameraAnimating = false
-            controls.enabled = true
-            controls.update()
-        },
-    })
-}
 
 /* resize */
 window.addEventListener('resize', () => {
@@ -586,7 +380,13 @@ scene.add(smoke)
 
 const clock = new THREE.Clock()
 
-/* animate*/
+
+animate()
+
+
+// ==========================================================================
+/** Functions */
+// ==========================================================================
 function animate(timestamps) {
 
     const elapsedTime = clock.getElapsedTime()
@@ -678,4 +478,232 @@ function animate(timestamps) {
         }
     }
 
-animate()
+/**
+ * Ensure the object has the necessary user data for the hover effect
+ * @param {THREE.Object3D} child
+ * @returns {void}
+ */
+function ensureHoverUserData(child) {
+    if (!child.userData.initialScale) {
+        child.userData.initialScale = new THREE.Vector3().copy(child.scale)
+    }
+    if (!child.userData.initialPosition) {
+        child.userData.initialPosition = new THREE.Vector3().copy(child.position)
+    }
+    if (!child.userData.initialRotation) {
+        child.userData.initialRotation = new THREE.Euler().copy(child.rotation)
+    }
+    if (child.userData.isAnimating === undefined) {
+        child.userData.isAnimating = false
+    }
+}
+
+/**
+ * Place a live iframe on the desktop_screen mesh via CSS3D .
+ * @param {THREE.Mesh} mesh
+ */
+function mountDesktopCss3D(mesh) {
+    desktopScreenMesh = mesh
+
+    const iframe = document.createElement('iframe')
+    iframe.src = desktopUrl
+    iframe.title = 'Roomangix OS'
+    iframe.loading = 'lazy'
+    iframe.referrerPolicy = 'no-referrer'
+    iframe.setAttribute('aria-hidden', 'true')
+    iframe.tabIndex = -1
+    iframe.style.width = `${DESKTOP_IFRAME_WIDTH}px`
+    iframe.style.height = `${DESKTOP_IFRAME_HEIGHT}px`
+
+    const cssObject = new CSS3DObject(iframe)
+
+    mesh.updateWorldMatrix(true, false)
+    mesh.geometry.computeBoundingBox()
+    const bb = mesh.geometry.boundingBox
+    const localSize = bb.getSize(new THREE.Vector3())
+    const localCenter = bb.getCenter(new THREE.Vector3())
+    const worldScale = mesh.getWorldScale(new THREE.Vector3())
+    const size = localSize.clone().multiply(worldScale)
+
+    const axes = [
+        { axis: 'x', value: size.x },
+        { axis: 'y', value: size.y },
+        { axis: 'z', value: size.z },
+    ].sort((a, b) => a.value - b.value)
+    const depth = axes[0]
+
+    const center = localCenter.clone()
+    mesh.localToWorld(center)
+
+    const worldQuat = mesh.getWorldQuaternion(new THREE.Quaternion())
+    cssObject.quaternion.copy(worldQuat)
+    cssObject.position.copy(center)
+
+    let screenW
+    let screenH
+    if (depth.axis === 'z') {
+        screenW = size.x
+        screenH = size.y
+    } else if (depth.axis === 'x') {
+        cssObject.rotateY(Math.PI / 2)
+        screenW = size.z
+        screenH = size.y
+    } else {
+        cssObject.rotateX(-Math.PI / 2)
+        screenW = size.x
+        screenH = size.z
+    }
+
+    cssObject.scale.set(screenW / DESKTOP_IFRAME_WIDTH, screenH / DESKTOP_IFRAME_HEIGHT, 1)
+
+    // Sit on the front face (toward camera)
+    const depthDir = new THREE.Vector3(
+        depth.axis === 'x' ? 1 : 0,
+        depth.axis === 'y' ? 1 : 0,
+        depth.axis === 'z' ? 1 : 0,
+    ).applyQuaternion(worldQuat)
+    if (depthDir.dot(camera.position.clone().sub(center)) < 0) {
+        depthDir.negate()
+    }
+    cssObject.position.addScaledVector(depthDir, depth.value * 0.5 + 0.002)
+
+    // Keep a dark panel under the iframe
+    mesh.material = new THREE.MeshBasicMaterial({ color: 0x0a0a0a })
+
+    cssScene.add(cssObject)
+
+    // Invisible hitbox for raycast / click → camera zoom
+    desktopHitbox = new THREE.Mesh(
+        new THREE.PlaneGeometry(screenW * 1.5, screenH * 1.5),
+        new THREE.MeshBasicMaterial({
+            transparent: true,
+            opacity: 0,
+            depthWrite: false,
+            side: THREE.DoubleSide,
+        }),
+    )
+    desktopHitbox.name = 'desktop_screen_hitbox'
+    desktopHitbox.userData.isDesktopHitbox = true
+    desktopHitbox.position.copy(cssObject.position)
+    desktopHitbox.quaternion.copy(cssObject.quaternion)
+    desktopHitbox.position.addScaledVector(depthDir, 0.01)
+    scene.add(desktopHitbox)
+    objectsToIntersect.push(desktopHitbox)
+
+    desktopFocus = {
+        target: cssObject.position.clone(),
+        normal: depthDir.clone(),
+        cameraPos: cssObject.position.clone().addScaledVector(depthDir, DESKTOP_FOCUS_DISTANCE),
+    }
+}
+
+/** Clickable passion props that should not scale on hover.
+ * @param {string} objectName - the name of the object
+*/
+function skipsHoverEffect(objectName) {
+    return objectName.includes('gis_letter')
+        || objectName.includes('lis')
+        || objectName.includes('earth_globe')
+        || objectName.includes('naruto_headband')
+        || objectName.includes('threejs')
+        || objectName.includes('desktop_screen_hitbox')
+}
+
+function isDesktopHitbox(object) {
+    return Boolean(object?.userData?.isDesktopHitbox)
+}
+
+/**
+ * Apply controls limits to the camera.
+ * @param {*} limits 
+ */
+function applyControlsLimits(limits) {
+    controls.minDistance = limits.minDistance
+    controls.maxDistance = limits.maxDistance
+    controls.minAzimuthAngle = limits.minAzimuthAngle
+    controls.maxAzimuthAngle = limits.maxAzimuthAngle
+    controls.minPolarAngle = limits.minPolarAngle
+    controls.maxPolarAngle = limits.maxPolarAngle
+}
+
+/**
+ * Focus the desktop screen.
+ */
+function focusDesktopScreen() {
+    if (!desktopFocus || isCameraAnimating) return
+    if (isDesktopFocused) {
+        exitDesktopFocus()
+        return
+    }
+
+    isCameraAnimating = true
+    isDesktopFocused = true
+    controls.enabled = false
+    applyControlsLimits({
+        minDistance: 0.49,
+        maxDistance: savedControlsLimits.maxDistance,
+        minAzimuthAngle: -Infinity,
+        maxAzimuthAngle: Infinity,
+        minPolarAngle: 0.05,
+        maxPolarAngle: Math.PI - 0.05,
+    })
+
+    gsap.killTweensOf(camera.position)
+    gsap.killTweensOf(controls.target)
+
+    gsap.to(camera.position, {
+        x: desktopFocus.cameraPos.x,
+        y: desktopFocus.cameraPos.y,
+        z: desktopFocus.cameraPos.z,
+        duration: 1.5,
+        ease: 'power2.inOut',
+    })
+    gsap.to(controls.target, {
+        x: desktopFocus.target.x,
+        y: desktopFocus.target.y,
+        z: desktopFocus.target.z,
+        duration: 1.5,
+        ease: 'power2.inOut',
+        onUpdate: () => controls.update(),
+        onComplete: () => {
+            isCameraAnimating = false
+            controls.enabled = true
+            controls.update()
+        },
+    })
+}
+
+/**
+ * Exit the desktop focus.
+ */
+function exitDesktopFocus() {
+    if (!isDesktopFocused || isCameraAnimating) return
+
+    isCameraAnimating = true
+    controls.enabled = false
+    gsap.killTweensOf(camera.position)
+    gsap.killTweensOf(controls.target)
+
+    gsap.to(camera.position, {
+        x: cameraPosition.x,
+        y: cameraPosition.y,
+        z: cameraPosition.z,
+        duration: 1.5,
+        ease: 'power2.inOut',
+    })
+    gsap.to(controls.target, {
+        x: cameraTarget.x,
+        y: cameraTarget.y,
+        z: cameraTarget.z,
+        duration: 1.5,
+        ease: 'power2.inOut',
+        onUpdate: () => controls.update(),
+        onComplete: () => {
+            applyControlsLimits(savedControlsLimits)
+            isDesktopFocused = false
+            isCameraAnimating = false
+            controls.enabled = true
+            controls.update()
+        },
+    })
+}

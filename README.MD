@@ -1,15 +1,13 @@
 
-`My 3D Room`
-Build using `Blender` and `ThreeJS`
+`My personal portfolio`
+Build using `Blender` and `Three.js`
 
 ## Installation guide
 Make sure you have installed the latest version of Node.js
 Then run:
 
-```
+```bash
 npm install
-```
-```
 npm run dev
 ```
 
@@ -32,6 +30,17 @@ This work is based on "MacBook" (https://sketchfab.com/3d-models/macbook-289c013
 - `Naruto headbands`:    
 This work is based on "Naruto Headbands" (https://sketchfab.com/3d-models/naruto-headbands-67e8c1ecb0f24d16af9d51bd296bfd2d) by Calfan (https://sketchfab.com/Calfan) licensed under CC-BY-NC-4.0 (http://creativecommons.org/licenses/by-nc/4.0/)
 - `Life is Strange Sound Night Ambiance`: by `Porschel` => [YouTube link](https://www.youtube.com/watch?v=K2xcLjFnd6k&list=RDK2xcLjFnd6k&start_radio=1)
+
+**GIFS**:
+- Malenia : [Giphy - @bandainamco](https://giphy.com/gifs/bandainamco-elden-ring-fromsoftware-eldenring-vVJe0aiWuCkqYy3GsQ)
+- Ghost of tsushima : [Giphy - GhostOfTsushima](https://giphy.com/gifs/game-awards-2019-QWdT60eDhFfcKgPG2T)
+- ThreeJS : [Giphy - @MozillaFoundation](https://giphy.com/gifs/MozillaFoundation-mozilla-mozfest-festival-D0OP0nSzMRRnqThsji)
+- Naruto : [Giphy - Naruto](https://giphy.com/gifs/g4N6wTrf1v6yQ)
+- Chess : [Giphy - @aardman](https://giphy.com/gifs/shaun-the-sheep-shaunthesheep-shaunthesheep6-QW9gued0UndbeUrr8S)
+- Rubiks Cube : [Giphy - @csak](https://giphy.com/gifs/csak-art-rubiks-cube-csaba-klement-UqPhCdioYHmdq)
+- Life is Strange : [Giphy - @ACarriganArt](https://giphy.com/gifs/JDq0hHW2Espz5vKneO)
+- GIS : [Giphy - @mujkaktus](https://giphy.com/gifs/mujkaktus-map-mapa-trasa-QmHmjEwtbQtlkOx8T1)
+
 
 This work is inspired by :
 -  [Bruno Simon's room](https://my-room-in-3d.vercel.app/) by Bruno Simon
