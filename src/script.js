@@ -640,7 +640,7 @@ function focusDesktopScreen() {
     isDesktopFocused = true
     controls.enabled = false
     applyControlsLimits({
-        minDistance: 0.49,
+        minDistance: 0.46,
         maxDistance: savedControlsLimits.maxDistance,
         minAzimuthAngle: -Infinity,
         maxAzimuthAngle: Infinity,
