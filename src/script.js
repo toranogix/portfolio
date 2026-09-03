@@ -40,7 +40,7 @@ let isCameraAnimating = false
 
 const savedControlsLimits = {
     minDistance: 3,
-    maxDistance: 8,
+    maxDistance: 6,
     minAzimuthAngle: Math.PI * 0.5,
     maxAzimuthAngle: -Math.PI,
     minPolarAngle: Math.PI * 0.2,
