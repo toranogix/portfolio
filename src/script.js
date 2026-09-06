@@ -3,7 +3,6 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
-import { CSS3DRenderer, CSS3DObject } from 'three/examples/jsm/renderers/CSS3DRenderer.js'
 import {texturesPaths, cameraPosition, cameraTarget, socialLinks, passionInfo, params, desktopUrl} from '../public/constants/constants.js'
 import gui from '../public/debug/debug.js'
 import { createAudioManager } from '../public/audio/audioManager.js'
@@ -29,10 +28,15 @@ const gisLetterAnim = { peak: 0.2, periodSec: 3.5, staggerSec: 0.35 }
 let ball = null
 const occluderDepthMeshes = []
 
-const DESKTOP_IFRAME_WIDTH = 1280
+const DESKTOP_IFRAME_WIDTH = 1290
 const DESKTOP_IFRAME_HEIGHT = 720
 const DESKTOP_FOCUS_DISTANCE = 0.25
+const DESKTOP_SCREEN_INSET = 0.01
+const desktopCornerWorld = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()]
+const desktopNdc = new THREE.Vector3()
 let desktopScreenMesh = null
+let desktopOverlay = null
+let desktopCornersLocal = null
 let desktopHitbox = null
 let desktopFocus = null
 let isDesktopFocused = false
@@ -53,7 +57,6 @@ const macScreenVideoTexture = loadVideoTexture(params.videoTexturePath);
 /* scene*/
 const canvas = document.querySelector('canvas.webgl')
 const scene = new THREE.Scene()
-const cssScene = new THREE.Scene()
 
 /* camera*/
 const camera = new THREE.PerspectiveCamera(35, params.aspect, 0.1, 100)
@@ -91,16 +94,11 @@ scene.add(ambientLight);
 
 
 /* renderers
- * Layer stack: WebGL room → CSS3D iframe on screen → WebGL occluder
+ * Layer stack: WebGL room → projected iframe on screen → WebGL occluder
  */
 const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true })
 renderer.setSize(params.width, params.height)
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-
-const cssRenderer = new CSS3DRenderer()
-cssRenderer.setSize(params.width, params.height)
-cssRenderer.domElement.classList.add('css3d')
-document.body.appendChild(cssRenderer.domElement)
 
 const occluderCanvas = document.createElement('canvas')
 occluderCanvas.className = 'webgl-occluder'
@@ -119,7 +117,6 @@ window.addEventListener('resize', () => {
     params.aspect = params.width / params.height
     renderer.setSize(params.width, params.height)
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-    cssRenderer.setSize(params.width, params.height)
     occluderRenderer.setSize(params.width, params.height)
     occluderRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     camera.aspect = params.aspect
@@ -130,31 +127,35 @@ window.addEventListener('resize', () => {
 const raycaster = new THREE.Raycaster()
 const mouse = new THREE.Vector2()
 const touch = new THREE.Vector2()
+
 window.addEventListener('mousemove', (event) => {
-    mouse.x = event.clientX / params.width * 2 - 1,
-    mouse.y = - (event.clientY / params.height) * 2 + 1
-    if(currentIntersects && currentIntersects.length > 0){
+    mouse.x = event.clientX / params.width * 2 - 1
+    mouse.y = -(event.clientY / params.height) * 2 + 1
+    if (isCameraAnimating) return
+
+    if (isDesktopFocused) {
+        if (event.target?.closest?.('.desktop-css3d')) return
+        if (!isPointerOverDesktopHitbox()) exitDesktopFocus()
+        return
+    }
+
+    if (isPointerOverDesktopHitbox()) focusDesktopScreen()
+})
+
+window.addEventListener('touchmove', (event) => {
+    touch.x = event.clientX / params.width * 2 - 1
+    touch.y = -(event.clientY / params.height) * 2 + 1
+})
+
+window.addEventListener('click', () => {
+    if (isCameraAnimating || isDesktopFocused) return
+    if (currentIntersects && currentIntersects.length > 0) {
         const object = currentIntersects[0].object
 
         if (isDesktopHitbox(object)) {
             focusDesktopScreen()
             return
         }
-    }
-})
-window.addEventListener('touchmove', (event) => {
-    touch.x = event.clientX / params.width * 2 - 1,
-    touch.y = - (event.clientY / params.height) * 2 + 1
-})
-window.addEventListener('click', () => {
-    if (isCameraAnimating) return
-    if(currentIntersects && currentIntersects.length > 0){
-        const object = currentIntersects[0].object
-
-        // if (isDesktopHitbox(object)) {
-        //     focusDesktopScreen()
-        //     return
-        // }
 
         for (const [key, url] of Object.entries(socialLinks)) {
             if (object.name.includes(key)) {
@@ -177,7 +178,6 @@ window.addEventListener('click', () => {
 window.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') exitDesktopFocus()
 })
-
 
 /* controls */
 const controls = new OrbitControls(camera, canvas)
@@ -317,7 +317,7 @@ loader.load("/model/room_portfolio.glb", (glb) => {
                     child.userData.isAnimating = false
                 }
 
-                // desktop screen: live site via CSS3D iframe
+                // desktop screen: live site via projected iframe overlay
                 if (child.name.includes("desktop_screen")){
                     child.material = new THREE.MeshBasicMaterial({ color: 0x0a0a0a })
                     child.userData.isDesktopScreen = true
@@ -459,7 +459,7 @@ function animate(timestamps) {
         currentHoveredObject = null
     }
         renderer.render(scene, camera)
-        cssRenderer.render(cssScene, camera)
+        syncDesktopOverlay()
 
         for (const mesh of occluderDepthMeshes) {
             const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
@@ -499,23 +499,165 @@ function ensureHoverUserData(child) {
 }
 
 /**
- * Place a live iframe on the desktop_screen mesh via CSS3D .
+ * Solve position matrix for the iframe overlay
+ * @param {number[][]} A
+ * @param {number[]} b
+ * @returns {number[] | null}
+ */
+function solveLinear8(A, b) {
+    const n = 8
+    const m = A.map((row, i) => [...row, b[i]])
+    for (let col = 0; col < n; col++) {
+        let pivot = col
+        for (let row = col + 1; row < n; row++) {
+            if (Math.abs(m[row][col]) > Math.abs(m[pivot][col])) pivot = row
+        }
+        if (Math.abs(m[pivot][col]) < 1e-12) return null
+        if (pivot !== col) {
+            const tmp = m[col]
+            m[col] = m[pivot]
+            m[pivot] = tmp
+        }
+        const div = m[col][col]
+        for (let j = col; j <= n; j++) m[col][j] /= div
+        for (let row = 0; row < n; row++) {
+            if (row === col) continue
+            const factor = m[row][col]
+            for (let j = col; j <= n; j++) m[row][j] -= factor * m[col][j]
+        }
+    }
+    return m.map((row) => row[n])
+}
+
+/**
+ * CSS matrix3d that maps a width×height rectangle onto a screen-space quad.
+ * Corners are top-left, top-right, bottom-right, bottom-left.
+ * @param {number} width
+ * @param {number} height
+ * @param {{x:number,y:number}[]} dest
+ * @returns {string | null}
+ */
+function quadToMatrix3d(width, height, dest) {
+    const src = [
+        { x: 0, y: 0 },
+        { x: width, y: 0 },
+        { x: width, y: height },
+        { x: 0, y: height },
+    ]
+    const A = []
+    const b = []
+    for (let i = 0; i < 4; i++) {
+        const { x, y } = src[i]
+        const u = dest[i].x
+        const v = dest[i].y
+        A.push([x, y, 1, 0, 0, 0, -u * x, -u * y])
+        b.push(u)
+        A.push([0, 0, 0, x, y, 1, -v * x, -v * y])
+        b.push(v)
+    }
+    const h = solveLinear8(A, b)
+    if (!h) return null
+    return `matrix3d(${[
+        h[0], h[3], 0, h[6],
+        h[1], h[4], 0, h[7],
+        0, 0, 1, 0,
+        h[2], h[5], 0, 1,
+    ].join(',')})`
+}
+
+function signedQuadArea(dest) {
+    let area = 0
+    for (let i = 0; i < 4; i++) {
+        const j = (i + 1) % 4
+        area += dest[i].x * dest[j].y - dest[j].x * dest[i].y
+    }
+    return area * 0.5
+}
+
+/**
+ * Keep the iframe glued to the desktop screen using the WebGL camera projection
+ */
+function syncDesktopOverlay() {
+    if (!desktopOverlay || !desktopScreenMesh || !desktopCornersLocal) return
+
+    desktopScreenMesh.updateWorldMatrix(true, false)
+    camera.updateMatrixWorld()
+
+    const dest = []
+    let behind = false
+    for (let i = 0; i < 4; i++) {
+        const world = desktopCornerWorld[i].copy(desktopCornersLocal[i])
+        desktopScreenMesh.localToWorld(world)
+        if (world.clone().applyMatrix4(camera.matrixWorldInverse).z > 0) behind = true
+        desktopNdc.copy(world).project(camera)
+        dest.push({
+            x: (desktopNdc.x * 0.5 + 0.5) * params.width,
+            y: (-desktopNdc.y * 0.5 + 0.5) * params.height,
+        })
+    }
+
+    const matrix = !behind && signedQuadArea(dest) > 4
+        ? quadToMatrix3d(DESKTOP_IFRAME_WIDTH, DESKTOP_IFRAME_HEIGHT, dest)
+        : null
+
+    desktopOverlay.style.visibility = matrix ? 'visible' : 'hidden'
+    if (matrix) desktopOverlay.style.transform = matrix
+}
+
+/**
+ * Order 4 local-space corners as TL, TR, BR, BL from the current camera view
+ * @param {THREE.Mesh} mesh
+ * @param {THREE.Vector3[]} locals
+ * @returns {THREE.Vector3[]}
+ */
+function orderScreenCorners(mesh, locals) {
+    const projected = locals.map((local) => {
+        const world = local.clone()
+        mesh.localToWorld(world)
+        const ndc = world.clone().project(camera)
+        return {
+            local,
+            x: (ndc.x * 0.5 + 0.5) * params.width,
+            y: (-ndc.y * 0.5 + 0.5) * params.height,
+        }
+    })
+    const score = (p) => p.x + p.y
+    projected.sort((a, b) => score(a) - score(b))
+    const tl = projected[0]
+    const br = projected[3]
+    const mid = [projected[1], projected[2]]
+    const tr = mid[0].x >= mid[1].x ? mid[0] : mid[1]
+    const bl = tr === mid[0] ? mid[1] : mid[0]
+    return [tl.local, tr.local, br.local, bl.local]
+}
+
+/**
+ * Place a live iframe on the desktop_screen mesh.
  * @param {THREE.Mesh} mesh
  */
 function mountDesktopCss3D(mesh) {
     desktopScreenMesh = mesh
 
+    const overlay = document.createElement('div')
+    overlay.className = 'desktop-css3d'
+    overlay.style.width = `${DESKTOP_IFRAME_WIDTH}px`
+    overlay.style.height = `${DESKTOP_IFRAME_HEIGHT}px`
+
     const iframe = document.createElement('iframe')
     iframe.src = desktopUrl
-    iframe.title = 'Roomangix OS'
-    iframe.loading = 'lazy'
+    iframe.title = 'Romangix OS'
     iframe.referrerPolicy = 'no-referrer'
     iframe.setAttribute('aria-hidden', 'true')
     iframe.tabIndex = -1
-    iframe.style.width = `${DESKTOP_IFRAME_WIDTH}px`
-    iframe.style.height = `${DESKTOP_IFRAME_HEIGHT}px`
-
-    const cssObject = new CSS3DObject(iframe)
+    overlay.appendChild(iframe)
+    occluderCanvas.before(overlay)
+    desktopOverlay = overlay
+    overlay.addEventListener('mouseleave', (event) => {
+        if (!isDesktopFocused || isCameraAnimating) return
+        mouse.x = event.clientX / params.width * 2 - 1
+        mouse.y = -(event.clientY / params.height) * 2 + 1
+        if (!isPointerOverDesktopHitbox()) exitDesktopFocus()
+    })
 
     mesh.updateWorldMatrix(true, false)
     mesh.geometry.computeBoundingBox()
@@ -536,27 +678,6 @@ function mountDesktopCss3D(mesh) {
     mesh.localToWorld(center)
 
     const worldQuat = mesh.getWorldQuaternion(new THREE.Quaternion())
-    cssObject.quaternion.copy(worldQuat)
-    cssObject.position.copy(center)
-
-    let screenW
-    let screenH
-    if (depth.axis === 'z') {
-        screenW = size.x
-        screenH = size.y
-    } else if (depth.axis === 'x') {
-        cssObject.rotateY(Math.PI / 2)
-        screenW = size.z
-        screenH = size.y
-    } else {
-        cssObject.rotateX(-Math.PI / 2)
-        screenW = size.x
-        screenH = size.z
-    }
-
-    cssObject.scale.set(screenW / DESKTOP_IFRAME_WIDTH, screenH / DESKTOP_IFRAME_HEIGHT, 1)
-
-    // Sit on the front face (toward camera)
     const depthDir = new THREE.Vector3(
         depth.axis === 'x' ? 1 : 0,
         depth.axis === 'y' ? 1 : 0,
@@ -565,16 +686,74 @@ function mountDesktopCss3D(mesh) {
     if (depthDir.dot(camera.position.clone().sub(center)) < 0) {
         depthDir.negate()
     }
-    cssObject.position.addScaledVector(depthDir, depth.value * 0.5 + 0.002)
 
-    // Keep a dark panel under the iframe
+    const probeMin = localCenter.clone()
+    const probeMax = localCenter.clone()
+    probeMin[depth.axis] = bb.min[depth.axis]
+    probeMax[depth.axis] = bb.max[depth.axis]
+    mesh.localToWorld(probeMin)
+    mesh.localToWorld(probeMax)
+    const front = probeMax.distanceToSquared(camera.position) < probeMin.distanceToSquared(camera.position)
+        ? bb.max[depth.axis]
+        : bb.min[depth.axis]
+    const min = bb.min
+    const max = bb.max
+
+    let unordered
+    if (depth.axis === 'z') {
+        unordered = [
+            new THREE.Vector3(min.x, max.y, front),
+            new THREE.Vector3(max.x, max.y, front),
+            new THREE.Vector3(max.x, min.y, front),
+            new THREE.Vector3(min.x, min.y, front),
+        ]
+    } else if (depth.axis === 'x') {
+        unordered = [
+            new THREE.Vector3(front, max.y, min.z),
+            new THREE.Vector3(front, max.y, max.z),
+            new THREE.Vector3(front, min.y, max.z),
+            new THREE.Vector3(front, min.y, min.z),
+        ]
+    } else {
+        unordered = [
+            new THREE.Vector3(min.x, front, max.z),
+            new THREE.Vector3(max.x, front, max.z),
+            new THREE.Vector3(max.x, front, min.z),
+            new THREE.Vector3(min.x, front, min.z),
+        ]
+    }
+
+    const cornerCenter = unordered[0].clone()
+        .add(unordered[1])
+        .add(unordered[2])
+        .add(unordered[3])
+        .multiplyScalar(0.25)
+    desktopCornersLocal = orderScreenCorners(
+        mesh,
+        unordered.map((corner) => corner.lerp(cornerCenter, DESKTOP_SCREEN_INSET)),
+    )
+
+    let screenW
+    let screenH
+    const screenQuat = worldQuat.clone()
+    if (depth.axis === 'z') {
+        screenW = size.x
+        screenH = size.y
+    } else if (depth.axis === 'x') {
+        screenQuat.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2))
+        screenW = size.z
+        screenH = size.y
+    } else {
+        screenQuat.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2))
+        screenW = size.x
+        screenH = size.z
+    }
+
+    const screenPos = center.clone().addScaledVector(depthDir, depth.value * 0.5 + 0.002)
     mesh.material = new THREE.MeshBasicMaterial({ color: 0x0a0a0a })
 
-    cssScene.add(cssObject)
-
-    // Invisible hitbox for raycast / click → camera zoom
     desktopHitbox = new THREE.Mesh(
-        new THREE.PlaneGeometry(screenW * 1.5, screenH * 1.5),
+        new THREE.PlaneGeometry(screenW * 1.2, screenH * 1.2),
         new THREE.MeshBasicMaterial({
             transparent: true,
             opacity: 0,
@@ -584,17 +763,19 @@ function mountDesktopCss3D(mesh) {
     )
     desktopHitbox.name = 'desktop_screen_hitbox'
     desktopHitbox.userData.isDesktopHitbox = true
-    desktopHitbox.position.copy(cssObject.position)
-    desktopHitbox.quaternion.copy(cssObject.quaternion)
+    desktopHitbox.position.copy(screenPos)
+    desktopHitbox.quaternion.copy(screenQuat)
     desktopHitbox.position.addScaledVector(depthDir, 0.01)
     scene.add(desktopHitbox)
     objectsToIntersect.push(desktopHitbox)
 
     desktopFocus = {
-        target: cssObject.position.clone(),
+        target: screenPos.clone(),
         normal: depthDir.clone(),
-        cameraPos: cssObject.position.clone().addScaledVector(depthDir, DESKTOP_FOCUS_DISTANCE),
+        cameraPos: screenPos.clone().addScaledVector(depthDir, DESKTOP_FOCUS_DISTANCE),
     }
+
+    syncDesktopOverlay()
 }
 
 /** Clickable passion props that should not scale on hover.
@@ -611,6 +792,22 @@ function skipsHoverEffect(objectName) {
 
 function isDesktopHitbox(object) {
     return Boolean(object?.userData?.isDesktopHitbox)
+}
+
+function isPointerOverDesktopHitbox() {
+    if (!desktopHitbox) return false
+    raycaster.setFromCamera(mouse, camera)
+    return raycaster.intersectObject(desktopHitbox).length > 0
+}
+
+function setDesktopInteractive(enabled) {
+    if (!desktopOverlay) return
+    desktopOverlay.classList.toggle('desktop-css3d--interactive', enabled)
+    const iframe = desktopOverlay.querySelector('iframe')
+    if (iframe) {
+        iframe.tabIndex = enabled ? 0 : -1
+        iframe.setAttribute('aria-hidden', enabled ? 'false' : 'true')
+    }
 }
 
 /**
@@ -630,11 +827,7 @@ function applyControlsLimits(limits) {
  * Focus the desktop screen.
  */
 function focusDesktopScreen() {
-    if (!desktopFocus || isCameraAnimating) return
-    if (isDesktopFocused) {
-        exitDesktopFocus()
-        return
-    }
+    if (!desktopFocus || isCameraAnimating || isDesktopFocused) return
 
     isCameraAnimating = true
     isDesktopFocused = true
@@ -667,7 +860,7 @@ function focusDesktopScreen() {
         onUpdate: () => controls.update(),
         onComplete: () => {
             isCameraAnimating = false
-            controls.enabled = true
+            setDesktopInteractive(true)
             controls.update()
         },
     })
@@ -681,6 +874,7 @@ function exitDesktopFocus() {
 
     isCameraAnimating = true
     controls.enabled = false
+    setDesktopInteractive(false)
     gsap.killTweensOf(camera.position)
     gsap.killTweensOf(controls.target)
 
